@@ -1,5 +1,14 @@
 {
   "repository": "TerminalX Official Repository",
   "version": 1,
-  "packages": []
+  "packages": [
+    {
+      "id": "translate",
+      "title": "Translator",
+      "version": "1.0.0",
+      "author": "Sagor",
+      "file": "packages/translate.js",
+      "description": "Language Translation Package"
+    }
+  ]
 }
