@@ -3,12 +3,12 @@
   "version": 1,
   "packages": [
     {
-      "id": "translate",
-      "title": "Translator",
+      "id": "notes",
+      "title": "Notes",
       "version": "1.0.0",
       "author": "Sagor",
-      "file": "packages/translate.js",
-      "description": "Language Translation Package"
+      "file": "packages/notes.js",
+      "description": "Offline Notes Manager"
     }
   ]
 }
