@@ -1,10 +1,8 @@
 {
-  "version": 1,
+  "package": "notes",
+  "version": "1.0.1",
+  "date": "2026-07-22",
   "changes": [
-    {
-      "date": "2026-07-21",
-      "title": "Repository Created",
-      "body": "Initial package repository."
-    }
+    "Minor UI improvements"
   ]
 }
