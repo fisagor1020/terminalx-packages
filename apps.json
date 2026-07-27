@@ -1,0 +1,11 @@
+{
+  "apps": [
+    {
+      "id": "notes",
+      "title": "Notes",
+      "version": "1.0.0",
+      "file": "apps/notes.html",
+      "description": "Simple offline notes app"
+    }
+  ]
+}
