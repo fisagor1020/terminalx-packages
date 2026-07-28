@@ -488,6 +488,39 @@
   const toastMsg = document.getElementById("toastMsg");
   const undoBtn = document.getElementById("undoBtn");
 
+  /* ---------- persistence (via outer gitapp storage bridge) ----------
+     The sandboxed iframe has no localStorage of its own. The outer,
+     non-sandboxed page (gitapp-engine.js) does, and relays data to us
+     over postMessage. If that bridge isn't present (e.g. this file is
+     opened directly, outside Terminal X), loading just resolves to
+     nothing and the app falls back to in-memory-only, same as before. */
+
+  function requestSavedData() {
+    return new Promise(resolve => {
+      let done = false;
+      function handler(event) {
+        if (event.data && event.data.type === "gitapp:storage-data") {
+          done = true;
+          window.removeEventListener("message", handler);
+          resolve(event.data.payload);
+        }
+      }
+      window.addEventListener("message", handler);
+      try {
+        parent.postMessage({ type: "gitapp:storage-get" }, "*");
+      } catch (e) { /* no parent bridge available */ }
+      setTimeout(() => {
+        if (!done) { window.removeEventListener("message", handler); resolve(null); }
+      }, 800);
+    });
+  }
+
+  function persist() {
+    try {
+      parent.postMessage({ type: "gitapp:storage-set", payload: { notes, nextId } }, "*");
+    } catch (e) { /* no parent bridge available -- stays in-memory only */ }
+  }
+
   /* ---------- helpers ---------- */
 
   function copyToClipboard(text) {
@@ -634,6 +667,7 @@
         note.updatedAt = Date.now();
       }
     }
+    persist();
   }
 
   function closeDetail() {
@@ -682,6 +716,7 @@
     if (!note) return;
     note.pinned = !note.pinned;
     pinToggleBtn.classList.toggle("active", note.pinned);
+    persist();
     showToast(note.pinned ? "Pinned." : "Unpinned.", false);
   });
 
@@ -719,6 +754,7 @@
       tag: src.tag, pinned: false, createdAt: now, updatedAt: now
     };
     notes.unshift(copy);
+    persist();
     showToast("Note duplicated.", false);
     openDetail(copy.id);
   });
@@ -748,6 +784,7 @@
     if (index === -1) return;
     lastDeleted = { note: notes[index], index };
     notes.splice(index, 1);
+    persist();
     if (goBackToList) { currentNoteId = null; showScreen(screenList); }
     renderList();
     showToast("Note deleted.", true);
@@ -757,6 +794,7 @@
     if (!lastDeleted) return;
     notes.splice(Math.min(lastDeleted.index, notes.length), 0, lastDeleted.note);
     lastDeleted = null;
+    persist();
     toastEl.classList.remove("show");
     renderList();
   });
@@ -798,7 +836,14 @@
     });
   });
 
-  renderList();
+  (async function init() {
+    const saved = await requestSavedData();
+    if (saved && Array.isArray(saved.notes)) {
+      notes = saved.notes;
+      nextId = saved.nextId || (notes.reduce((m, n) => Math.max(m, n.id), 0) + 1);
+    }
+    renderList();
+  })();
 </script>
 
 </body>
