@@ -64,6 +64,10 @@
     border-radius: 8px;
     margin: 14px;
   }
+  #manualReason {
+    color: #f0883e;
+    font-size: 13px;
+  }
   #manualForm input {
     padding: 8px;
     border-radius: 6px;
@@ -79,6 +83,10 @@
     color: #fff;
     font-weight: bold;
     cursor: pointer;
+  }
+  #retryAutoBtn {
+    background: #21262d;
+    border: 1px solid #30363d;
   }
   #retryBtn {
     display: block;
@@ -102,14 +110,200 @@
 </div>
 
 <div id="manualForm">
+  <div id="manualReason" style="display:none;"></div>
   <div style="color:#7d8590;font-size:13px;">
-    স্বয়ংক্রিয়ভাবে লোকেশন পাওয়া যায়নি। ম্যানুয়ালি Latitude/Longitude দিন:
+    স্বয়ংক্রিয়ভাবে লোকেশন পাওয়া যায়নি। ম্যানুয়ালি Latitude/Longitude দিন,
+    অথবা আবার চেষ্টা করুন (permission দেওয়ার পর প্রথমবার এমন হতে পারে):
   </div>
+  <button id="retryAutoBtn">🔄 আবার লোকেশন চেষ্টা করুন</button>
   <input id="latInput" type="number" step="any" placeholder="Latitude (e.g. 23.8103)">
   <input id="lonInput" type="number" step="any" placeholder="Longitude (e.g. 90.4125)">
   <button id="manualSubmit">Get Prayer Times</button>
 </div>
 
+<script>
+(function () {
+
+  const PRAYER_LABELS = {
+    Fajr:    "ফজর",
+    Sunrise: "সূর্যোদয়",
+    Dhuhr:   "যোহর",
+    Asr:     "আসর",
+    Sunset:  "সূর্যাস্ত",
+    Maghrib: "মাগরিব",
+    Isha:    "এশা"
+  };
+
+  const DISPLAY_ORDER = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+  const statusEl = document.getElementById("status");
+  const contentEl = document.getElementById("content");
+  const metaEl = document.getElementById("meta");
+  const manualForm = document.getElementById("manualForm");
+
+  function to12h(hhmm) {
+    // Aladhan returns "HH:MM (TZ)" sometimes -- strip any suffix.
+    const clean = hhmm.split(" ")[0];
+    const [h, m] = clean.split(":").map(Number);
+    const period = h >= 12 ? "PM" : "AM";
+    const hour12 = ((h % 12) === 0) ? 12 : (h % 12);
+    return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+  }
+
+  function minutesSinceMidnight(hhmm) {
+    const clean = hhmm.split(" ")[0];
+    const [h, m] = clean.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  function render(timings, dateLabel) {
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+    let nextName = null;
+    let minDiff = Infinity;
+
+    DISPLAY_ORDER.forEach(name => {
+      if (!timings[name]) return;
+      const t = minutesSinceMidnight(timings[name]);
+      let diff = t - nowMinutes;
+      if (diff < 0) diff += 24 * 60;
+      if (diff < minDiff) {
+        minDiff = diff;
+        nextName = name;
+      }
+    });
+
+    contentEl.innerHTML = "";
+
+    DISPLAY_ORDER.forEach(name => {
+      if (!timings[name]) return;
+      const row = document.createElement("div");
+      row.className = "row" + (name === nextName ? " next" : "");
+      row.innerHTML =
+        `<span class="name">${PRAYER_LABELS[name] || name}</span>` +
+        `<span class="time">${to12h(timings[name])}</span>`;
+      contentEl.appendChild(row);
+    });
+
+    metaEl.textContent = dateLabel || "";
+  }
+
+  async function fetchTimings(lat, lon, timezone) {
+    const url =
+      `https://api.aladhan.com/v1/timings/${Math.floor(Date.now() / 1000)}` +
+      `?latitude=${lat}&longitude=${lon}&method=1` +
+      (timezone ? `&timezonestring=${encodeURIComponent(timezone)}` : "");
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Prayer time service unavailable.");
+
+    const data = await res.json();
+    if (!data || !data.data || !data.data.timings) {
+      throw new Error("Invalid response from prayer time service.");
+    }
+
+    return {
+      timings: data.data.timings,
+      dateLabel: data.data.date && data.data.date.readable
+        ? data.data.date.readable
+        : ""
+    };
+  }
+
+  async function loadFor(lat, lon, timezone) {
+    statusEl.textContent = "নামাজের সময় আনা হচ্ছে...";
+    statusEl.style.display = "block";
+    contentEl.innerHTML = "";
+    manualForm.style.display = "none";
+
+    try {
+      const { timings, dateLabel } = await fetchTimings(lat, lon, timezone);
+      statusEl.style.display = "none";
+      render(timings, dateLabel);
+    } catch (err) {
+      statusEl.style.display = "block";
+      statusEl.innerHTML =
+        `${err.message || "সমস্যা হয়েছে।"}<br>` +
+        `<button id="retryBtn">আবার চেষ্টা করুন</button>`;
+      document.getElementById("retryBtn").onclick = () => loadFor(lat, lon, timezone);
+    }
+  }
+
+  function showManualEntry(reason) {
+    statusEl.style.display = "none";
+    contentEl.innerHTML = "";
+    manualForm.style.display = "flex";
+    const reasonEl = document.getElementById("manualReason");
+    if (reason) {
+      reasonEl.textContent = reason;
+      reasonEl.style.display = "block";
+    } else {
+      reasonEl.style.display = "none";
+    }
+  }
+
+  document.getElementById("retryAutoBtn").addEventListener("click", () => {
+    document.getElementById("retryAutoBtn").textContent = "খোঁজা হচ্ছে...";
+    // Ask the outer (non-sandboxed) terminal page to re-fetch the
+    // device fix via its native Location bridge -- this iframe has no
+    // direct access to it. See gitapp-engine.js's message listener.
+    window.parent.postMessage({ type: "gitapp:retry-location" }, "*");
+  });
+
+  window.addEventListener("message", (event) => {
+    if (!event.data || event.data.type !== "gitapp:location") return;
+    document.getElementById("retryAutoBtn").textContent = "🔄 আবার লোকেশন চেষ্টা করুন";
+    const payload = event.data.payload;
+    if (payload && payload.available) {
+      loadFor(payload.latitude, payload.longitude, payload.timezone);
+    } else {
+      showManualEntry(payload && payload.error);
+    }
+  });
+
+  document.getElementById("manualSubmit").addEventListener("click", () => {
+    const lat = parseFloat(document.getElementById("latInput").value);
+    const lon = parseFloat(document.getElementById("lonInput").value);
+    if (Number.isNaN(lat) || Number.isNaN(lon)) {
+      alert("সঠিক Latitude ও Longitude দিন।");
+      return;
+    }
+    loadFor(lat, lon, null);
+  });
+
+  function init() {
+    // window.__GITAPP_LOCATION__ is injected by the terminal app itself
+    // (see gitapp-engine.js) using its native location bridge -- this
+    // app never touches Terminal/Location directly.
+    const loc = window.__GITAPP_LOCATION__;
+
+    if (loc && loc.available) {
+      loadFor(loc.latitude, loc.longitude, loc.timezone);
+      return;
+    }
+
+    // Fallback: plain browser geolocation, in case this app is opened
+    // outside the terminal (e.g. directly in a normal browser tab).
+    if ("geolocation" in navigator) {
+      statusEl.textContent = "লোকেশন খোঁজা হচ্ছে...";
+      navigator.geolocation.getCurrentPosition(
+        pos => loadFor(pos.coords.latitude, pos.coords.longitude, null),
+        () => showManualEntry(loc && loc.error),
+        { timeout: 10000 }
+      );
+      return;
+    }
+
+    showManualEntry(loc && loc.error);
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
 <script>
 (function () {
 
