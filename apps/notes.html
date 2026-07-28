@@ -4,112 +4,894 @@
 <meta charset="UTF-8">
 <title>Notes</title>
 <style>
+  :root{
+    --bg: #050a06;
+    --panel: #0a130c;
+    --panel2: #0d1a10;
+    --border: #17351f;
+    --accent: #00ff9c;
+    --accent-dim: rgba(0,255,156,.12);
+    --text: #c9ffe0;
+    --muted: #5f9e79;
+    --danger: #ff5c5c;
+    --warn: #ffcf4a;
+    --info: #4ad0ff;
+    --urgent: #ff5c5c;
+  }
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    font-family: sans-serif;
-    background: #0d1117;
-    color: #e6edf3;
+    font-family: 'Courier New', 'JetBrains Mono', monospace;
+    background: var(--bg);
+    color: var(--text);
     height: 100vh;
     display: flex;
     flex-direction: column;
+    font-size: 14px;
   }
+  ::selection{ background: var(--accent-dim); color: var(--accent); }
+  ::-webkit-scrollbar{ width: 8px; }
+  ::-webkit-scrollbar-thumb{ background: var(--border); border-radius: 4px; }
+
   header {
-    padding: 12px 16px;
-    background: #161b22;
-    border-bottom: 1px solid #30363d;
-    font-weight: bold;
+    padding: 10px 14px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
   }
+  header .title {
+    color: var(--accent);
+    font-weight: bold;
+    letter-spacing: 1px;
+    white-space: nowrap;
+    text-shadow: 0 0 6px var(--accent-dim);
+  }
+  header .title .cursor{
+    display:inline-block;
+    width:8px; height:14px;
+    background: var(--accent);
+    margin-left:4px;
+    vertical-align:-2px;
+    animation: blink 1s steps(1) infinite;
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+  header .actions {
+    display: flex;
+    gap: 6px;
+  }
+  header .actions button {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 4px;
+    padding: 5px 8px;
+    font-size: 11px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  header .actions button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  #toolbar {
+    padding: 8px 10px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  #searchInput {
+    flex: 1;
+    min-width: 120px;
+    padding: 6px 9px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+  }
+  #searchInput:focus { outline: none; border-color: var(--accent); }
+  #sortSelect {
+    padding: 6px 6px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    font-size: 11px;
+    font-family: inherit;
+  }
+  .chip {
+    padding: 5px 9px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    font-size: 11px;
+    cursor: pointer;
+    background: var(--panel);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .chip.active {
+    border-color: currentColor;
+  }
+  .chip[data-tag="general"].active{ color: var(--accent); }
+  .chip[data-tag="task"].active{ color: var(--warn); }
+  .chip[data-tag="idea"].active{ color: var(--info); }
+  .chip[data-tag="urgent"].active{ color: var(--urgent); }
+  .chip[data-tag="all"].active{ color: var(--text); border-color: var(--text); }
+
+  #stats {
+    padding: 5px 14px;
+    font-size: 11px;
+    color: var(--muted);
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+  }
+
   #list {
     flex: 1;
     overflow-y: auto;
     padding: 10px;
   }
   .note {
-    background: #161b22;
-    border: 1px solid #30363d;
-    border-radius: 6px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 4px;
     padding: 10px;
     margin-bottom: 8px;
+  }
+  .note.tag-task{ border-left-color: var(--warn); }
+  .note.tag-idea{ border-left-color: var(--info); }
+  .note.tag-urgent{ border-left-color: var(--urgent); }
+  .note.pinned {
+    background: var(--panel2);
+    box-shadow: 0 0 0 1px var(--accent-dim);
+  }
+  .note-top {
     display: flex;
     justify-content: space-between;
+    align-items: flex-start;
     gap: 8px;
-    white-space: pre-wrap;
+  }
+  .note-body {
+    flex: 1;
+    line-height: 1.5;
     word-break: break-word;
   }
-  .note button {
-    background: transparent;
-    color: #f85149;
-    border: none;
-    font-size: 16px;
+  .note-line { white-space: pre-wrap; }
+  .note-line mark {
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 2px;
+  }
+  .cb-line {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
     cursor: pointer;
+    white-space: pre-wrap;
+  }
+  .cb-line .box {
+    flex: 0 0 auto;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--muted);
+    border-radius: 3px;
+    margin-top: 2px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    color: var(--accent);
+  }
+  .cb-line.done { color: var(--muted); text-decoration: line-through; }
+  .cb-line.done .box { background: var(--accent-dim); border-color: var(--accent); }
+
+  .note-edit {
+    width: 100%;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    resize: vertical;
+    min-height: 50px;
+  }
+  .note-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
     flex: 0 0 auto;
   }
-  #inputBar {
+  .note-btns button {
+    background: transparent;
+    border: none;
+    font-size: 13px;
+    cursor: pointer;
+    color: var(--muted);
+    padding: 2px 4px;
+    border-radius: 4px;
+    font-family: inherit;
+  }
+  .note-btns button:hover { background: var(--accent-dim); color: var(--accent); }
+  .note-btns .pin-btn.active { color: var(--warn); }
+  .note-btns .del-btn:hover { color: var(--danger); background: rgba(255,92,92,.12); }
+  .tag-dot {
+    width: 9px; height: 9px; border-radius: 50%;
+    display: inline-block; margin-right: 5px;
+  }
+  .tag-general .tag-dot{ background: var(--accent); }
+  .tag-task .tag-dot{ background: var(--warn); }
+  .tag-idea .tag-dot{ background: var(--info); }
+  .tag-urgent .tag-dot{ background: var(--urgent); }
+
+  .note-meta {
+    margin-top: 6px;
+    font-size: 10px;
+    color: var(--muted);
     display: flex;
     gap: 8px;
+    align-items: center;
+  }
+
+  #inputBar {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
     padding: 10px;
-    background: #161b22;
-    border-top: 1px solid #30363d;
+    background: var(--panel);
+    border-top: 1px solid var(--border);
   }
+  #tagSelect {
+    padding: 8px 4px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 12px;
+  }
+  #inputWrap { flex: 1; display: flex; flex-direction: column; gap: 3px; }
   #noteInput {
-    flex: 1;
+    width: 100%;
     padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #30363d;
-    background: #0d1117;
-    color: #e6edf3;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-family: inherit;
+    font-size: 13px;
+    resize: none;
+    min-height: 36px;
+    max-height: 120px;
   }
+  #noteInput:focus { outline: none; border-color: var(--accent); }
+  #charCount { font-size: 10px; color: var(--muted); align-self: flex-end; }
   #addBtn {
     padding: 8px 14px;
-    border-radius: 6px;
-    border: none;
-    background: #238636;
-    color: #fff;
+    border-radius: 4px;
+    border: 1px solid var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
     font-weight: bold;
     cursor: pointer;
+    white-space: nowrap;
+    font-family: inherit;
   }
+  #addBtn:hover { background: var(--accent); color: #00160a; }
+
   #empty {
-    color: #7d8590;
+    color: var(--muted);
     text-align: center;
     margin-top: 30px;
+    padding: 0 20px;
+    line-height: 1.7;
+  }
+  #empty .hint{ font-size: 11px; opacity: .7; }
+
+  #toast {
+    position: fixed;
+    bottom: 74px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--panel2);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s ease, transform .15s ease;
+    z-index: 20;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: auto; }
+  #toast button {
+    background: transparent; border: none; color: var(--accent);
+    font-weight: bold; cursor: pointer; font-size: 12px; font-family: inherit;
+  }
+
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 30;
+    padding: 16px;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--accent);
+    border-radius: 6px;
+    padding: 14px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .modal h3 { margin: 0 0 4px 0; color: var(--accent); font-size: 13px; }
+  .modal textarea {
+    width: 100%;
+    min-height: 160px;
+    background: var(--bg);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 8px;
+    font-family: inherit;
+    font-size: 11px;
+    resize: vertical;
+  }
+  .modal-row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .modal-row button {
+    flex: 1;
+    padding: 7px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 11px;
+    font-family: inherit;
+  }
+  .modal-row button.primary { border-color: var(--accent); color: var(--accent); }
+  .modal-row button:hover { background: var(--accent-dim); }
+  .modal .file-label {
+    font-size: 10px; color: var(--muted); cursor: pointer; text-decoration: underline;
+  }
+  .modal .close-x {
+    align-self: flex-end;
+    background: transparent; border: none; color: var(--muted);
+    cursor: pointer; font-size: 14px;
   }
 </style>
 </head>
 <body>
 
-<header>📝 Notes (gitapp demo)</header>
+<header>
+  <div class="title">📝 NOTES.SYS<span class="cursor"></span> <span id="countLabel" style="color:var(--muted); font-weight:normal; font-size:11px;"></span></div>
+  <div class="actions">
+    <button id="exportBtn" title="Export as JSON">⬇ Export</button>
+    <button id="importBtn" title="Import from JSON">⬆ Import</button>
+    <button id="clearAllBtn" title="Delete all notes">🗑 Clear</button>
+  </div>
+</header>
+
+<div id="toolbar">
+  <input id="searchInput" type="text" placeholder="🔍 search..." />
+  <select id="sortSelect">
+    <option value="newest">Newest</option>
+    <option value="oldest">Oldest</option>
+    <option value="az">A–Z</option>
+  </select>
+</div>
+<div id="toolbar" style="border-top:none; padding-top:0;">
+  <span class="chip active" data-tag="all">ALL</span>
+  <span class="chip" data-tag="general">● GENERAL</span>
+  <span class="chip" data-tag="task">● TASK</span>
+  <span class="chip" data-tag="idea">● IDEA</span>
+  <span class="chip" data-tag="urgent">● URGENT</span>
+</div>
+
+<div id="stats"></div>
 
 <div id="list"></div>
 
 <div id="inputBar">
-  <input id="noteInput" type="text" placeholder="Write a note and press Add..." />
+  <select id="tagSelect">
+    <option value="general">●GEN</option>
+    <option value="task">●TASK</option>
+    <option value="idea">●IDEA</option>
+    <option value="urgent">●URG</option>
+  </select>
+  <div id="inputWrap">
+    <textarea id="noteInput" rows="1" placeholder="Write a note... ( - [ ] item = checklist line )"></textarea>
+    <div id="charCount">0</div>
+  </div>
   <button id="addBtn">Add</button>
+</div>
+
+<div id="toast">
+  <span id="toastMsg"></span>
+  <button id="undoBtn">Undo</button>
+</div>
+
+<div class="overlay" id="exportOverlay">
+  <div class="modal">
+    <button class="close-x" data-close="exportOverlay">✕ close</button>
+    <h3>⬇ Export notes (JSON)</h3>
+    <textarea id="exportText" readonly></textarea>
+    <div class="modal-row">
+      <button class="primary" id="copyJsonBtn">Copy JSON</button>
+      <button id="downloadJsonBtn">Try Download</button>
+    </div>
+    <div style="font-size:10px;color:var(--muted);">
+      লোকাল স্টোরেজ এই sandbox-এ persist করে না, তাই সেশন শেষে এই JSON কপি/ডাউনলোড করে রাখুন — পরে Import দিয়ে ফিরিয়ে আনতে পারবেন।
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="importOverlay">
+  <div class="modal">
+    <button class="close-x" data-close="importOverlay">✕ close</button>
+    <h3>⬆ Import notes (JSON)</h3>
+    <textarea id="importText" placeholder="এখানে JSON paste করুন..."></textarea>
+    <label class="file-label">অথবা ফাইল বাছাই করুন
+      <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
+    </label>
+    <div class="modal-row">
+      <button class="primary" id="mergeBtn">Merge (append)</button>
+      <button id="replaceBtn">Replace all</button>
+    </div>
+  </div>
 </div>
 
 <script>
   // Note: this runs inside a sandboxed srcdoc iframe with no
   // allow-same-origin, so it gets a fresh opaque origin every time
-  // it's opened -- localStorage isn't reliable here. Notes are kept
-  // in memory only, for the lifetime of this open session.
-  let notes = [];
+  // it's opened -- localStorage isn't reliable here. Notes live in
+  // memory only for this session; use Export/Import (JSON) as the
+  // manual persistence workaround across sessions.
+
+  let notes = [];      // { id, text, tag, pinned, createdAt, updatedAt }
+  let nextId = 1;
+  let searchTerm = "";
+  let activeTag = "all";
+  let sortMode = "newest";
+  let lastDeleted = null;
+  let toastTimer = null;
+
+  const TAG_LABEL = { general: "GENERAL", task: "TASK", idea: "IDEA", urgent: "URGENT" };
 
   const listEl = document.getElementById("list");
   const inputEl = document.getElementById("noteInput");
+  const tagSelect = document.getElementById("tagSelect");
   const addBtn = document.getElementById("addBtn");
+  const searchEl = document.getElementById("searchInput");
+  const sortEl = document.getElementById("sortSelect");
+  const countLabel = document.getElementById("countLabel");
+  const charCount = document.getElementById("charCount");
+  const statsEl = document.getElementById("stats");
+  const clearAllBtn = document.getElementById("clearAllBtn");
+  const toastEl = document.getElementById("toast");
+  const toastMsg = document.getElementById("toastMsg");
+  const undoBtn = document.getElementById("undoBtn");
+  const chips = document.querySelectorAll(".chip");
+
+  const exportOverlay = document.getElementById("exportOverlay");
+  const importOverlay = document.getElementById("importOverlay");
+  const exportBtn = document.getElementById("exportBtn");
+  const importBtn = document.getElementById("importBtn");
+  const exportText = document.getElementById("exportText");
+  const importText = document.getElementById("importText");
+  const importFile = document.getElementById("importFile");
+  const copyJsonBtn = document.getElementById("copyJsonBtn");
+  const downloadJsonBtn = document.getElementById("downloadJsonBtn");
+  const mergeBtn = document.getElementById("mergeBtn");
+  const replaceBtn = document.getElementById("replaceBtn");
+
+  /* ---------- helpers ---------- */
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+
+  function highlight(text, term) {
+    const safe = escapeHtml(text);
+    if (!term) return safe;
+    const escTerm = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return safe.replace(new RegExp("(" + escTerm + ")", "ig"), "<mark>$1</mark>");
+  }
+
+  function timeAgo(ts) {
+    const diff = Math.floor((Date.now() - ts) / 1000);
+    if (diff < 5) return "just now";
+    if (diff < 60) return diff + "s ago";
+    if (diff < 3600) return Math.floor(diff / 60) + "m ago";
+    if (diff < 86400) return Math.floor(diff / 3600) + "h ago";
+    return Math.floor(diff / 86400) + "d ago";
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    } else {
+      fallbackCopy(text);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) {}
+    ta.remove();
+  }
+
+  function showToast(message, withUndo) {
+    clearTimeout(toastTimer);
+    toastMsg.textContent = message;
+    undoBtn.style.display = withUndo ? "inline" : "none";
+    toastEl.classList.add("show");
+    toastTimer = setTimeout(() => {
+      toastEl.classList.remove("show");
+      lastDeleted = null;
+    }, 5000);
+  }
+
+  /* ---------- checklist line parsing ---------- */
+
+  const CB_RE = /^(\s*-\s\[)([ xX])(\]\s?)(.*)$/;
+
+  function renderNoteBody(note) {
+    const wrap = document.createElement("div");
+    wrap.className = "note-body";
+    const lines = note.text.split("\n");
+
+    lines.forEach((line, idx) => {
+      const m = line.match(CB_RE);
+      if (m) {
+        const done = m[2].toLowerCase() === "x";
+        const row = document.createElement("div");
+        row.className = "cb-line" + (done ? " done" : "");
+        row.innerHTML =
+          `<span class="box">${done ? "✓" : ""}</span><span>${highlight(m[4], searchTerm)}</span>`;
+        row.onclick = () => {
+          const newLines = note.text.split("\n");
+          const nm = newLines[idx].match(CB_RE);
+          if (!nm) return;
+          newLines[idx] = nm[1] + (done ? " " : "x") + nm[3] + nm[4];
+          note.text = newLines.join("\n");
+          note.updatedAt = Date.now();
+          render();
+        };
+        wrap.appendChild(row);
+      } else {
+        const p = document.createElement("div");
+        p.className = "note-line";
+        p.innerHTML = highlight(line, searchTerm) || "&nbsp;";
+        wrap.appendChild(p);
+      }
+    });
+    return wrap;
+  }
+
+  /* ---------- render ---------- */
+
+  function visibleNotes() {
+    let list = [...notes];
+    if (activeTag !== "all") list = list.filter(n => n.tag === activeTag);
+    if (searchTerm) {
+      const t = searchTerm.toLowerCase();
+      list = list.filter(n => n.text.toLowerCase().includes(t));
+    }
+    list.sort((a, b) => {
+      if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
+      if (sortMode === "oldest") return a.createdAt - b.createdAt;
+      if (sortMode === "az") return a.text.localeCompare(b.text);
+      return b.updatedAt - a.updatedAt;
+    });
+    return list;
+  }
+
+  function updateStats() {
+    countLabel.textContent = notes.length ? `[${notes.length}]` : "";
+    const totalWords = notes.reduce((s, n) => s + n.text.trim().split(/\s+/).filter(Boolean).length, 0);
+    const pinnedCount = notes.filter(n => n.pinned).length;
+    statsEl.textContent = notes.length
+      ? `${notes.length} notes · ${totalWords} words · ${pinnedCount} pinned`
+      : "";
+  }
 
   function render() {
+    updateStats();
+    const items = visibleNotes();
     listEl.innerHTML = "";
+
     if (notes.length === 0) {
-      listEl.innerHTML = "<div id='empty'>কোনো নোট নেই। নিচে লিখে Add চাপুন।</div>";
+      listEl.innerHTML = `<div id="empty">কোনো নোট নেই।<br>নিচে লিখে Add চাপুন।<br><span class="hint">টিপ: "- [ ] task" লিখলে checklist হয়ে যায়।</span></div>`;
       return;
     }
-    notes.forEach((text, i) => {
+    if (items.length === 0) {
+      listEl.innerHTML = `<div id="empty">কোনো ফলাফল পাওয়া যায়নি।</div>`;
+      return;
+    }
+
+    items.forEach(note => {
       const div = document.createElement("div");
-      div.className = "note";
-      const span = document.createElement("span");
-      span.textContent = text;
-      const btn = document.createElement("button");
+      div.className = `note tag-${note.tag}` + (note.pinned ? " pinned" : "");
+
+      const top = document.createElement("div");
+      top.className = "note-top";
+      top.appendChild(renderNoteBody(note));
+
+      const btns = document.createElement("div");
+      btns.className = "note-btns";
+
+      const tagBtn = document.createElement("button");
+      tagBtn.className = `tag-${note.tag}`;
+      tagBtn.innerHTML = `<span class="tag-dot"></span>`;
+      tagBtn.title = "Change tag: " + TAG_LABEL[note.tag];
+      tagBtn.onclick = () => {
+        const order = ["general", "task", "idea", "urgent"];
+        note.tag = order[(order.indexOf(note.tag) + 1) % order.length];
+        render();
+      };
+
+      const pinBtn = document.createElement("button");
+      pinBtn.className = "pin-btn" + (note.pinned ? " active" : "");
+      pinBtn.textContent = "📌";
+      pinBtn.title = note.pinned ? "Unpin" : "Pin";
+      pinBtn.onclick = () => { note.pinned = !note.pinned; render(); };
+
+      const editBtn = document.createElement("button");
+      editBtn.textContent = "✏️";
+      editBtn.title = "Edit";
+      editBtn.onclick = () => startEdit(note.id, div);
+
+      const copyBtn = document.createElement("button");
+      copyBtn.textContent = "📋";
+      copyBtn.title = "Copy this note";
+      copyBtn.onclick = () => { copyToClipboard(note.text); showToast("Note copied.", false); };
+
+      const delBtn = document.createElement("button");
+      delBtn.className = "del-btn";
+      delBtn.textContent = "✕";
+      delBtn.title = "Delete";
+      delBtn.onclick = () => deleteNote(note.id);
+
+      [tagBtn, pinBtn, editBtn, copyBtn, delBtn].forEach(b => btns.appendChild(b));
+
+      top.appendChild(btns);
+
+      const meta = document.createElement("div");
+      meta.className = "note-meta";
+      const words = note.text.trim().split(/\s+/).filter(Boolean).length;
+      meta.innerHTML =
+        `<span>${TAG_LABEL[note.tag]}</span><span>·</span><span>${timeAgo(note.updatedAt)}</span><span>·</span><span>${words}w</span>`;
+
+      div.appendChild(top);
+      div.appendChild(meta);
+      listEl.appendChild(div);
+    });
+  }
+
+  function startEdit(id, container) {
+    const note = notes.find(n => n.id === id);
+    if (!note) return;
+    const body = container.querySelector(".note-body");
+
+    const ta = document.createElement("textarea");
+    ta.className = "note-edit";
+    ta.value = note.text;
+    body.replaceWith(ta);
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+
+    function commit() {
+      const val = ta.value.trim();
+      if (val) { note.text = val; note.updatedAt = Date.now(); }
+      render();
+    }
+    ta.addEventListener("blur", commit);
+    ta.addEventListener("keydown", e => {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); ta.blur(); }
+      if (e.key === "Escape") { e.preventDefault(); render(); }
+    });
+  }
+
+  /* ---------- actions ---------- */
+
+  function addNote() {
+    const val = inputEl.value.trim();
+    if (!val) return;
+    const now = Date.now();
+    notes.push({
+      id: nextId++, text: val, tag: tagSelect.value,
+      pinned: false, createdAt: now, updatedAt: now
+    });
+    inputEl.value = "";
+    autoResize();
+    updateCharCount();
+    render();
+  }
+
+  function deleteNote(id) {
+    const index = notes.findIndex(n => n.id === id);
+    if (index === -1) return;
+    lastDeleted = { note: notes[index], index };
+    notes.splice(index, 1);
+    render();
+    showToast("Note deleted.", true);
+  }
+
+  function undoDelete() {
+    if (!lastDeleted) return;
+    notes.splice(Math.min(lastDeleted.index, notes.length), 0, lastDeleted.note);
+    lastDeleted = null;
+    toastEl.classList.remove("show");
+    render();
+  }
+
+  function clearAll() {
+    if (notes.length === 0) return;
+    if (!confirm(`সব ${notes.length}টি নোট মুছে ফেলতে চান?`)) return;
+    notes = [];
+    render();
+  }
+
+  function autoResize() {
+    inputEl.style.height = "auto";
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
+  }
+  function updateCharCount() { charCount.textContent = inputEl.value.length; }
+
+  /* ---------- export / import ---------- */
+
+  function openOverlay(el) { el.classList.add("show"); }
+  function closeOverlay(el) { el.classList.remove("show"); }
+
+  function buildExportPayload() {
+    return JSON.stringify({
+      app: "TerminalX-Notes", version: 1,
+      exportedAt: new Date().toISOString(),
+      notes
+    }, null, 2);
+  }
+
+  exportBtn.addEventListener("click", () => {
+    exportText.value = buildExportPayload();
+    openOverlay(exportOverlay);
+  });
+  importBtn.addEventListener("click", () => {
+    importText.value = "";
+    openOverlay(importOverlay);
+  });
+  document.querySelectorAll("[data-close]").forEach(btn => {
+    btn.addEventListener("click", () => closeOverlay(document.getElementById(btn.dataset.close)));
+  });
+
+  copyJsonBtn.addEventListener("click", () => {
+    copyToClipboard(exportText.value);
+    showToast("JSON copied.", false);
+  });
+
+  downloadJsonBtn.addEventListener("click", () => {
+    try {
+      const blob = new Blob([exportText.value], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "terminalx-notes-" + Date.now() + ".json";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      showToast("Download blocked here — use Copy JSON instead.", false);
+    }
+  });
+
+  function parseImportPayload(raw) {
+    const data = JSON.parse(raw);
+    const incoming = Array.isArray(data) ? data : data.notes;
+    if (!Array.isArray(incoming)) throw new Error("Invalid format.");
+    return incoming.map(n => ({
+      id: nextId++,
+      text: String(n.text || ""),
+      tag: ["general", "task", "idea", "urgent"].includes(n.tag) ? n.tag : "general",
+      pinned: !!n.pinned,
+      createdAt: n.createdAt || Date.now(),
+      updatedAt: n.updatedAt || Date.now()
+    })).filter(n => n.text.trim());
+  }
+
+  mergeBtn.addEventListener("click", () => {
+    try {
+      const incoming = parseImportPayload(importText.value);
+      notes = notes.concat(incoming);
+      closeOverlay(importOverlay);
+      render();
+      showToast(`${incoming.length} note(s) imported.`, false);
+    } catch (e) {
+      showToast("Import failed: invalid JSON.", false);
+    }
+  });
+
+  replaceBtn.addEventListener("click", () => {
+    try {
+      const incoming = parseImportPayload(importText.value);
+      if (!confirm("বর্তমান সব নোট বাদ দিয়ে replace করবেন?")) return;
+      notes = incoming;
+      closeOverlay(importOverlay);
+      render();
+      showToast(`Replaced with ${incoming.length} note(s).`, false);
+    } catch (e) {
+      showToast("Import failed: invalid JSON.", false);
+    }
+  });
+
+  importFile.addEventListener("change", () => {
+    const file = importFile.files && importFile.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { importText.value = reader.result; };
+    reader.readAsText(file);
+  });
+
+  /* ---------- events ---------- */
+
+  addBtn.addEventListener("click", addNote);
+  inputEl.addEventListener("input", () => { autoResize(); updateCharCount(); });
+  inputEl.addEventListener("keydown", e => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); addNote(); }
+  });
+
+  searchEl.addEventListener("input", () => { searchTerm = searchEl.value.trim(); render(); });
+  searchEl.addEventListener("keydown", e => {
+    if (e.key === "Escape") { searchEl.value = ""; searchTerm = ""; render(); }
+  });
+
+  sortEl.addEventListener("change", () => { sortMode = sortEl.value; render(); });
+
+  chips.forEach(chip => {
+    chip.addEventListener("click", () => {
+      chips.forEach(c => c.classList.remove("active"));
+      chip.classList.add("active");
+      activeTag = chip.dataset.tag;
+      render();
+    });
+  });
+
+  clearAllBtn.addEventListener("click", clearAll);
+  undoBtn.addEventListener("click", undoDelete);
+
+  render();
+</script>
+
+</body>
+</html>
       btn.textContent = "✕";
       btn.onclick = () => {
         notes.splice(i, 1);
