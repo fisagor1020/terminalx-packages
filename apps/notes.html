@@ -138,4 +138,32 @@
 </script>
 
 </body>
+</html>      btn.textContent = "✕";
+      btn.onclick = () => {
+        notes.splice(i, 1);
+        render();
+      };
+      div.appendChild(span);
+      div.appendChild(btn);
+      listEl.appendChild(div);
+    });
+  }
+
+  function addNote() {
+    const val = inputEl.value.trim();
+    if (!val) return;
+    notes.unshift(val);
+    inputEl.value = "";
+    render();
+  }
+
+  addBtn.addEventListener("click", addNote);
+  inputEl.addEventListener("keydown", e => {
+    if (e.key === "Enter") addNote();
+  });
+
+  render();
+</script>
+
+</body>
 </html>
