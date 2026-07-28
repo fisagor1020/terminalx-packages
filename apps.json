@@ -6,6 +6,14 @@
       "version": "1.0.0",
       "file": "apps/notes.html",
       "description": "Simple offline notes app"
+    },
+    {
+      "id": "prayertimes",
+      "title": "Prayer Times",
+      "version": "1.0.0",
+      "file": "apps/prayertimes.html",
+      "description": "Location-based prayer (namaz) times",
+      "needsLocation": true
     }
   ]
 }
