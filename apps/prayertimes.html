@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prayer Times</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #0d1117;
+    color: #e6edf3;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  header {
+    padding: 14px 16px 10px;
+    background: #161b22;
+    border-bottom: 1px solid #30363d;
+    text-align: center;
+  }
+  header .title {
+    font-weight: bold;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  header .title .gear {
+    margin-left: auto;
+    background: none;
+    border: 1px solid #30363d;
+    color: #7d8590;
+    border-radius: 6px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+    font-size: 14px;
+  }
+  header .title .spacer { width: 28px; }
+  #meta {
+    text-align: center;
+    color: #7d8590;
+    font-size: 12.5px;
+    padding: 6px 10px 0;
+    line-height: 1.5;
+  }
+
+  #countdownCard {
+    margin: 14px 14px 0;
+    padding: 16px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #10321c, #142d22);
+    border: 1px solid #238636;
+    text-align: center;
+    display: none;
+  }
+  #countdownCard .label {
+    color: #7ee787;
+    font-size: 12.5px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  #countdownCard .name {
+    font-size: 20px;
+    font-weight: bold;
+    margin: 4px 0 2px;
+  }
+  #countdownCard .clock {
+    font-variant-numeric: tabular-nums;
+    font-size: 28px;
+    font-weight: bold;
+    color: #3fb950;
+  }
+
+  #content {
+    flex: 1;
+    padding: 14px;
+    overflow-y: auto;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+  }
+  .row.next {
+    border-color: #238636;
+    background: #10321c;
+  }
+  .row.passed { opacity: .5; }
+  .name { font-weight: bold; }
+  .time { font-variant-numeric: tabular-nums; color: #58a6ff; font-weight: bold; }
+  .row.next .time { color: #3fb950; }
+
+  #cacheNotice {
+    margin: 0 14px 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    background: #3a2a10;
+    border: 1px solid #6e4c1e;
+    color: #f0b429;
+    font-size: 12.5px;
+    display: none;
+  }
+
+  #status {
+    text-align: center;
+    color: #7d8590;
+    padding: 30px 14px;
+  }
+
+  #settingsPanel {
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 14px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    margin: 14px;
+  }
+  #settingsPanel h3 {
+    margin: 0 0 2px;
+    font-size: 13px;
+    color: #7d8590;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+  }
+  #settingsPanel select,
+  #settingsPanel input {
+    padding: 9px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: #0d1117;
+    color: #e6edf3;
+    font-size: 14px;
+  }
+  #settingsPanel button {
+    padding: 9px;
+    border-radius: 6px;
+    border: none;
+    background: #238636;
+    color: #fff;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  #settingsPanel .secondary {
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #e6edf3;
+  }
+  #manualReason {
+    color: #f0883e;
+    font-size: 13px;
+  }
+  #retryBtn {
+    display: block;
+    margin: 12px auto;
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    background: #21262d;
+    color: #e6edf3;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">
+    <span class="spacer"></span>
+    <span>🕌 Prayer Times</span>
+    <button class="gear" id="settingsBtn" title="Settings">⚙</button>
+  </div>
+</header>
+<div id="meta"></div>
+
+<div id="countdownCard">
+  <div class="label">পরবর্তী ওয়াক্ত</div>
+  <div class="name" id="cdName"></div>
+  <div class="clock" id="cdClock"></div>
+</div>
+
+<div id="cacheNotice">⚠ ইন্টারনেট নেই — শেষ সংরক্ষিত সময়সূচি দেখানো হচ্ছে।</div>
+
+<div id="content">
+  <div id="status">লোকেশন খোঁজা হচ্ছে...</div>
+</div>
+
+<div id="settingsPanel">
+  <h3>হিসাব পদ্ধতি (Calculation Method)</h3>
+  <select id="methodSelect">
+    <option value="1">University of Islamic Sciences, Karachi</option>
+    <option value="2">Islamic Society of North America (ISNA)</option>
+    <option value="3">Muslim World League</option>
+    <option value="4">Umm al-Qura, Makkah</option>
+    <option value="5">Egyptian General Authority</option>
+    <option value="8">Gulf Region</option>
+    <option value="12">Union Org. Islamic de France</option>
+  </select>
+
+  <h3>ম্যানুয়াল লোকেশন (ঐচ্ছিক)</h3>
+  <div id="manualReason" style="display:none;"></div>
+  <input id="latInput" type="number" step="any" placeholder="Latitude (e.g. 23.8103)">
+  <input id="lonInput" type="number" step="any" placeholder="Longitude (e.g. 90.4125)">
+
+  <button id="retryAutoBtn" class="secondary">🔄 আবার লোকেশন চেষ্টা করুন</button>
+  <button id="applySettingsBtn">প্রয়োগ করুন</button>
+  <button id="closeSettingsBtn" class="secondary">বন্ধ করুন</button>
+</div>
+
+<script>
+(function () {
+
+  const PRAYER_LABELS = {
+    Fajr:    "ফজর",
+    Sunrise: "সূর্যোদয়",
+    Dhuhr:   "যোহর",
+    Asr:     "আসর",
+    Maghrib: "মাগরিব",
+    Isha:    "এশা"
+  };
+
+  const DISPLAY_ORDER = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+  const statusEl          = document.getElementById("status");
+  const contentEl         = document.getElementById("content");
+  const metaEl             = document.getElementById("meta");
+  const settingsPanel      = document.getElementById("settingsPanel");
+  const settingsBtn        = document.getElementById("settingsBtn");
+  const methodSelect       = document.getElementById("methodSelect");
+  const cacheNotice        = document.getElementById("cacheNotice");
+  const countdownCard      = document.getElementById("countdownCard");
+  const cdName             = document.getElementById("cdName");
+  const cdClock            = document.getElementById("cdClock");
+
+  let lastCoords = null;       // { lat, lon, timezone }
+  let lastTimings = null;      // Aladhan timings object
+  let countdownTimer = null;
+
+  /* ===============================
+     STORAGE BRIDGE
+     This app runs inside a sandboxed iframe with no localStorage
+     of its own (fresh opaque origin every launch) -- so caching
+     goes through the outer terminal page via postMessage, not
+     window.localStorage directly. See gitapp-engine.js.
+  =============================== */
+  function storageGet() {
+    return new Promise((resolve) => {
+      const onMsg = (event) => {
+        if (!event.data || event.data.type !== "gitapp:storage-data") return;
+        window.removeEventListener("message", onMsg);
+        resolve(event.data.payload || null);
+      };
+      window.addEventListener("message", onMsg);
+      window.parent.postMessage({ type: "gitapp:storage-get" }, "*");
+      setTimeout(() => resolve(null), 2000); // don't hang forever if bridge is missing
+    });
+  }
+
+  function storageSet(payload) {
+    window.parent.postMessage({ type: "gitapp:storage-set", payload }, "*");
+  }
+
+  /* ===============================
+     TIME HELPERS
+  =============================== */
+  function to12h(hhmm) {
+    const clean = hhmm.split(" ")[0];
+    const [h, m] = clean.split(":").map(Number);
+    const period = h >= 12 ? "PM" : "AM";
+    const hour12 = ((h % 12) === 0) ? 12 : (h % 12);
+    return `${hour12}:${String(m).padStart(2, "0")} ${period}`;
+  }
+
+  function minutesSinceMidnight(hhmm) {
+    const clean = hhmm.split(" ")[0];
+    const [h, m] = clean.split(":").map(Number);
+    return h * 60 + m;
+  }
+
+  function nextPrayerInfo(timings) {
+    const now = new Date();
+    const nowMinutes = now.getHours() * 60 + now.getMinutes() + now.getSeconds() / 60;
+
+    let nextName = null;
+    let minDiff = Infinity;
+
+    DISPLAY_ORDER.forEach(name => {
+      if (!timings[name]) return;
+      const t = minutesSinceMidnight(timings[name]);
+      let diff = t - nowMinutes;
+      if (diff < 0) diff += 24 * 60;
+      if (diff < minDiff) {
+        minDiff = diff;
+        nextName = name;
+      }
+    });
+
+    return { nextName, minDiff };
+  }
+
+  function formatCountdown(totalMinutes) {
+    const totalSeconds = Math.max(0, Math.round(totalMinutes * 60));
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m ${String(s).padStart(2, "0")}s`;
+    return `${m}m ${String(s).padStart(2, "0")}s`;
+  }
+
+  /* ===============================
+     RENDER
+  =============================== */
+  function render(timings, dateLabel, hijriLabel) {
+    lastTimings = timings;
+
+    const { nextName } = nextPrayerInfo(timings);
+    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+
+    contentEl.innerHTML = "";
+
+    DISPLAY_ORDER.forEach(name => {
+      if (!timings[name]) return;
+      const t = minutesSinceMidnight(timings[name]);
+      const row = document.createElement("div");
+      row.className = "row"
+        + (name === nextName ? " next" : "")
+        + (t < nowMinutes && name !== nextName ? " passed" : "");
+      row.innerHTML =
+        `<span class="name">${PRAYER_LABELS[name] || name}</span>` +
+        `<span class="time">${to12h(timings[name])}</span>`;
+      contentEl.appendChild(row);
+    });
+
+    metaEl.textContent = [dateLabel, hijriLabel].filter(Boolean).join(" • ");
+
+    startCountdown();
+  }
+
+  function startCountdown() {
+    if (countdownTimer) clearInterval(countdownTimer);
+    if (!lastTimings) return;
+
+    countdownCard.style.display = "block";
+
+    const tick = () => {
+      const { nextName, minDiff } = nextPrayerInfo(lastTimings);
+      if (!nextName) {
+        countdownCard.style.display = "none";
+        return;
+      }
+      cdName.textContent = PRAYER_LABELS[nextName] || nextName;
+      cdClock.textContent = formatCountdown(minDiff);
+    };
+
+    tick();
+    countdownTimer = setInterval(tick, 1000);
+  }
+
+  /* ===============================
+     FETCH
+  =============================== */
+  async function fetchTimings(lat, lon, timezone, method) {
+    const url =
+      `https://api.aladhan.com/v1/timings/${Math.floor(Date.now() / 1000)}` +
+      `?latitude=${lat}&longitude=${lon}&method=${method || 1}` +
+      (timezone ? `&timezonestring=${encodeURIComponent(timezone)}` : "");
+
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("Prayer time service unavailable.");
+
+    const data = await res.json();
+    if (!data || !data.data || !data.data.timings) {
+      throw new Error("Invalid response from prayer time service.");
+    }
+
+    const hijri = data.data.date && data.data.date.hijri;
+    const hijriLabel = hijri
+      ? `${hijri.day} ${hijri.month && hijri.month.en} ${hijri.year} AH`
+      : "";
+
+    return {
+      timings: data.data.timings,
+      dateLabel: data.data.date && data.data.date.readable ? data.data.date.readable : "",
+      hijriLabel
+    };
+  }
+
+  async function loadFor(lat, lon, timezone) {
+    lastCoords = { lat, lon, timezone };
+
+    statusEl.textContent = "নামাজের সময় আনা হচ্ছে...";
+    statusEl.style.display = "block";
+    cacheNotice.style.display = "none";
+    contentEl.innerHTML = "";
+    countdownCard.style.display = "none";
+
+    const method = methodSelect.value || "1";
+
+    try {
+      const { timings, dateLabel, hijriLabel } = await fetchTimings(lat, lon, timezone, method);
+      statusEl.style.display = "none";
+      render(timings, dateLabel, hijriLabel);
+
+      storageSet({
+        lat, lon, timezone, method,
+        timings, dateLabel, hijriLabel,
+        cachedAt: Date.now()
+      });
+
+    } catch (err) {
+      // Network/API failed -- fall back to last cached result if we have one.
+      const cached = await storageGet();
+      if (cached && cached.timings) {
+        statusEl.style.display = "none";
+        cacheNotice.style.display = "block";
+        render(cached.timings, cached.dateLabel, cached.hijriLabel);
+        return;
+      }
+
+      statusEl.style.display = "block";
+      statusEl.innerHTML =
+        `${err.message || "সমস্যা হয়েছে।"}<br>` +
+        `<button id="retryBtn">আবার চেষ্টা করুন</button>`;
+      document.getElementById("retryBtn").onclick = () => loadFor(lat, lon, timezone);
+    }
+  }
+
+  function showManualEntry(reason) {
+    statusEl.style.display = "none";
+    contentEl.innerHTML = "";
+    settingsPanel.style.display = "flex";
+    const reasonEl = document.getElementById("manualReason");
+    if (reason) {
+      reasonEl.textContent = reason;
+      reasonEl.style.display = "block";
+    } else {
+      reasonEl.style.display = "none";
+    }
+  }
+
+  /* ===============================
+     SETTINGS PANEL
+  =============================== */
+  settingsBtn.addEventListener("click", () => {
+    settingsPanel.style.display = settingsPanel.style.display === "flex" ? "none" : "flex";
+  });
+
+  document.getElementById("closeSettingsBtn").addEventListener("click", () => {
+    settingsPanel.style.display = "none";
+  });
+
+  document.getElementById("applySettingsBtn").addEventListener("click", () => {
+    const latVal = document.getElementById("latInput").value;
+    const lonVal = document.getElementById("lonInput").value;
+
+    settingsPanel.style.display = "none";
+
+    if (latVal && lonVal) {
+      const lat = parseFloat(latVal);
+      const lon = parseFloat(lonVal);
+      if (Number.isNaN(lat) || Number.isNaN(lon)) {
+        alert("সঠিক Latitude ও Longitude দিন।");
+        return;
+      }
+      loadFor(lat, lon, null);
+      return;
+    }
+
+    // No manual coords entered -- just re-run with existing/last known location
+    // (covers the case where the user only changed the calculation method).
+    if (lastCoords) {
+      loadFor(lastCoords.lat, lastCoords.lon, lastCoords.timezone);
+    }
+  });
+
+  document.getElementById("retryAutoBtn").addEventListener("click", () => {
+    document.getElementById("retryAutoBtn").textContent = "খোঁজা হচ্ছে...";
+    window.parent.postMessage({ type: "gitapp:retry-location" }, "*");
+  });
+
+  window.addEventListener("message", (event) => {
+    if (!event.data || event.data.type !== "gitapp:location") return;
+    document.getElementById("retryAutoBtn").textContent = "🔄 আবার লোকেশন চেষ্টা করুন";
+    const payload = event.data.payload;
+    if (payload && payload.available) {
+      settingsPanel.style.display = "none";
+      loadFor(payload.latitude, payload.longitude, payload.timezone);
+    } else {
+      showManualEntry(payload && payload.error);
+    }
+  });
+
+  /* ===============================
+     INIT
+  =============================== */
+  async function init() {
+    // Restore last-used calculation method from the storage bridge before
+    // the first fetch, so a returning user's preference sticks.
+    const cached = await storageGet();
+    if (cached && cached.method) {
+      methodSelect.value = cached.method;
+    }
+
+    const loc = window.__GITAPP_LOCATION__;
+
+    if (loc && loc.available) {
+      loadFor(loc.latitude, loc.longitude, loc.timezone);
+      return;
+    }
+
+    if (cached && cached.lat && cached.lon) {
+      // No live location yet, but we have a cached fix from last time --
+      // show it immediately instead of staring at "খোঁজা হচ্ছে...".
+      cacheNotice.style.display = "block";
+      render(cached.timings, cached.dateLabel, cached.hijriLabel);
+      statusEl.style.display = "none";
+      lastCoords = { lat: cached.lat, lon: cached.lon, timezone: cached.timezone };
+    }
+
+    if ("geolocation" in navigator) {
+      if (!cached) {
+        statusEl.textContent = "লোকেশন খোঁজা হচ্ছে...";
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => loadFor(pos.coords.latitude, pos.coords.longitude, null),
+        () => { if (!cached) showManualEntry(loc && loc.error); },
+        { timeout: 10000 }
+      );
+      return;
+    }
+
+    if (!cached) {
+      showManualEntry(loc && loc.error);
+    }
+  }
+
+  init();
+})();
+</script>
+
+</body>
+</html>
