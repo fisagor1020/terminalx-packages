@@ -6,7 +6,7 @@
   "id": "todo",
   "title": "Todo List",
   "version": "1.0.0",
-  "file": "todo.js",
+  "file": "packages/todo.js",
   "description": "Simple todo list manager"
 }
   ]
