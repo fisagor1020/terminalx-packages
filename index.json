@@ -2,14 +2,12 @@
   "repository": "TerminalX Official Repository",
   "version": 1,
   "packages": [
-    {
-  "id": "notes",
-  "title": "Notes",
-  "version": "1.0.1",
-  "author": "Sagor",
-  "file": "packages/notes.js",
-  "changelog": "changelog/notes.json",
-  "description": "Offline Notes Manager"
+{
+  "id": "todo",
+  "title": "Todo List",
+  "version": "1.0.0",
+  "file": "todo.js",
+  "description": "Simple todo list manager"
 }
   ]
 }
