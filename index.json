@@ -2,12 +2,13 @@
   "repository": "TerminalX Official Repository",
   "version": 1,
   "packages": [
-{
-  "id": "todo",
-  "title": "Todo List",
-  "version": "1.0.0",
-  "file": "packages/todo.js",
-  "description": "Simple todo list manager"
-}
+    {
+      "id": "todo",
+      "title": "Todo List",
+      "version": "1.0.0",
+      "description": "Simple todo list manager",
+      "manifestUrl": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/packages/todo/manifest.json",
+      "bundleUrl": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/packages/todo/todo.bundle.zip.enc"
+    }
   ]
 }

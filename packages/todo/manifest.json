@@ -1,0 +1,19 @@
+{
+  "id": "todo",
+  "title": "Todo List",
+  "version": "1.0.0",
+  "entry": "todo.js",
+  "bundle_file": "todo.bundle.zip.enc",
+  "sha256": "cd6b357c91761c9933af36d1532b49956fb4c935864cb7a981d0ae3a423d4995",
+  "size_bytes": 1477,
+  "file_count": 1,
+  "plaintext_sha256": "fe7f232fa1d91e7c6e48b355c2b1eb766be414ddf4b857c7fd51596e81e9e152",
+  "encryption": {
+    "algorithm": "AES-256-GCM",
+    "nonce_b64": "J7/t/blT+kvOj3HC",
+    "tag_b64": "vfGsOqYl7qPTXPewXr5Xdg==",
+    "aad": "todo:1.0.0"
+  },
+  "signature_algorithm": "SHA256withECDSA",
+  "signature": "MEUCIQCq4Z1BOi87IdhVHNQZWAr0BY/guQjz75TrTmmTaGDlsQIgAbUzn/2DxTFNKbkz0oYWpKUheHLlTiR8XfPdt8CKC7g="
+}
