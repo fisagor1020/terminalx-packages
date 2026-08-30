@@ -2,7 +2,7 @@
   "apps": [
     {
       "id": "namaztimes",
-      "title": "Prayer Times",
+      "title": "Namaz Times",
       "version": "1.0.0",
       "description": "Location-based prayer (namaz) times",
       "needsLocation": true,
