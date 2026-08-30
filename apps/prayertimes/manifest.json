@@ -1,0 +1,19 @@
+{
+  "id": "prayertimes",
+  "title": "Prayer Times",
+  "version": "1.0.0",
+  "entry": "prayertimes.html",
+  "bundle_file": "prayertimes.bundle.zip.enc",
+  "sha256": "ba456579e72f78d97f642740d72bcc73e3fbdbfc6a51bc54c0d302faa033cb17",
+  "size_bytes": 5244,
+  "file_count": 1,
+  "plaintext_sha256": "51146e0e2cee2ddfbc5f654b658ef7a1bd42af8220d239c55375255815a1ea77",
+  "encryption": {
+    "algorithm": "AES-256-GCM",
+    "nonce_b64": "SPcMksnCjPmYVxwC",
+    "tag_b64": "23FA/wZCfCtoiU7qDuv+cQ==",
+    "aad": "prayertimes:1.0.0"
+  },
+  "signature_algorithm": "SHA256withECDSA",
+  "signature": "MEQCIGfamqGZqHOm+TmtiWmwogK/VqpizQNKlm4/EKwn5a+kAiBGo7VLOjt/55GD6ValUdqjVHMZ6iqY0B4LWOIGoDiXTA=="
+}

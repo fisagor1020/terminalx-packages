@@ -1,13 +1,13 @@
 {
   "apps": [
-   
     {
       "id": "prayertimes",
       "title": "Prayer Times",
       "version": "1.0.0",
-      "file": "apps/prayertimes.html",
       "description": "Location-based prayer (namaz) times",
-      "needsLocation": true
+      "needsLocation": true,
+      "manifestUrl": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/apps/prayertimes/manifest.json",
+      "bundleUrl": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/apps/prayertimes/prayertimes.bundle.zip.enc"
     }
   ]
 }
