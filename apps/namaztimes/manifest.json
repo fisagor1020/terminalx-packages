@@ -4,16 +4,16 @@
   "version": "1.0.0",
   "entry": "index.html",
   "bundle_file": "namaztimes.bundle.zip.enc",
-  "sha256": "1559d71c4cd5793358fc85f9bacfe6bf442b71f02923edb6c0157462c5c20303",
+  "sha256": "4f6aed9e61ac19796ec259eb68ed23fd1799d916dc1c264c3b27534ccd426593",
   "size_bytes": 5232,
   "file_count": 1,
-  "plaintext_sha256": "cdbe3917d34ac9a21efcdcc6c8556396dc669ee1bba3a133c80d3f7c18baeb68",
+  "plaintext_sha256": "6f88c374fb523eb7939d52bb0744d5c0c87efc7fc8883e385c6d3532fff07a15",
   "encryption": {
     "algorithm": "AES-256-GCM",
-    "nonce_b64": "83N+MZ+hEtULhDgm",
-    "tag_b64": "QF7v0zUtZLNQLhrK9v3ueQ==",
+    "nonce_b64": "61D3fWAhSXL24U7S",
+    "tag_b64": "6KWH0S9ctwt3jNnxnm5gFg==",
     "aad": "namaztimes:1.0.0"
   },
   "signature_algorithm": "SHA256withECDSA",
-  "signature": "MEYCIQDMOFjEEgkIZbK4uOymb3Vhln0zJLIR/Or86ieaakMxlgIhAO5DdtXSwM7J600LevxxVXcWrL/1w5XMLNBJo0eeN7h/"
+  "signature": "MEUCIDiXn3WkX/O7MZL0eDjU1iCN1Z+9k1w2ymSDte7Ld2USAiEA3TjDeMNUdBw2E1cNy7Cl7YUF9AyZrzkgFBwMe1+InWU="
 }
