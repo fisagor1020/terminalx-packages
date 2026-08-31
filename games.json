@@ -11,6 +11,39 @@
       ]
     },
     {
+      "id": "snake",
+      "title": "Snake Game",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snake/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snake/",
+      "entry": "snake.html",
+      "files": [
+        "snake.html"
+      ]
+    },
+    
+        {
+      "id": "tetris",
+      "title": "Tetris Game",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/tetris/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/tetris/",
+      "entry": "tetris.html",
+      "files": [
+        "tetris.html"
+      ]
+    },
+    
+        {
+      "id": "bounce",
+      "title": "Bounce Ball Game",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/bounce/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/bounce/",
+      "entry": "bounce.html",
+      "files": [
+        "bounce.html"
+      ]
+    },
+   
+    {
       "id": "pacman",
       "title": "Pacman",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/pacman/icon.webp",
