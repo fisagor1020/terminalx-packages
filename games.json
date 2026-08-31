@@ -3,7 +3,7 @@
     {
       "id": "neon-ray-arena",
       "title": "Neon Ray Arena",
-      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neon-ray-arena/icon.png",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neon-ray-arena/icon.webp",
       "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neon-ray-arena/",
       "entry": "neon-ray-arena.html",
       "files": [
