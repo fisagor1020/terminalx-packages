@@ -1,1 +1,79 @@
-
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Bounce — Mobile</title>
+<style>
+:root{--bg:#f7f7f7;--ink:#202020;--muted:#666;--panel:#fff;--line:#222;--accent:#111}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;min-height:100%;background:var(--bg);font-family:Arial,sans-serif;color:var(--ink)}
+body{display:flex;justify-content:center;overflow-x:hidden}
+#app{width:min(100%,560px);min-height:100dvh;padding:10px 12px calc(16px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+.top{display:flex;align-items:center;justify-content:space-between;height:46px}
+.logo{font-size:30px;font-weight:900;letter-spacing:-1px}
+.score{font-size:24px;font-weight:900}
+#wrap{width:100%;display:flex;justify-content:center}
+#game{width:min(100%,500px);aspect-ratio:10/15;background:#fff;border:3px solid #202020;position:relative;overflow:hidden;touch-action:none;box-shadow:inset 0 0 0 8px #eee}
+canvas{width:100%;height:100%;display:block}
+.controls{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;width:min(100%,500px);margin:auto}
+button{min-height:54px;border:2px solid #222;background:#fff;color:#111;border-radius:14px;font-size:17px;font-weight:900}
+button:active{transform:scale(.97);background:#eee}
+.wide{grid-column:span 3}
+.note{text-align:center;color:#666;font-size:12px;line-height:1.35}
+.overlay{position:absolute;inset:0;background:rgba(255,255,255,.94);display:flex;align-items:center;justify-content:center;padding:20px;z-index:3}
+.card{text-align:center;width:min(100%,390px)}
+h1{font-size:44px;margin:0 0 5px}h2{font-size:25px;margin:0 0 12px}
+p{color:#555;line-height:1.45;margin:8px 0 20px}
+.menu{display:grid;gap:10px}
+.hidden{display:none!important}
+.help{font-size:12px;color:#666;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="top"><div class="logo">Bounce</div><div class="score">0</div></div>
+  <div id="wrap"><div id="game">
+    <canvas id="c"></canvas>
+    <div class="overlay" id="menu"><div class="card">
+      <h1>Bounce</h1><p>Break bricks with the ball. Move the paddle with the buttons or drag it with your finger.</p>
+      <div class="menu">
+        <button data-mode="speed">Speed</button><button data-mode="random">Random</button><button data-mode="bricks">Bricks</button>
+      </div>
+      <div class="help">Tap the game area to launch • Pause anytime</div>
+    </div></div>
+  </div></div>
+  <div class="controls">
+    <button id="left">◀ LEFT</button><button id="pause">⏸ PAUSE</button><button id="right">RIGHT ▶</button>
+    <button class="wide" id="launch">● START / LAUNCH</button>
+  </div>
+  <div class="note">Mobile controls are built in. Drag on the game board also moves the paddle.</div>
+</div>
+<script>
+(()=>{const canvas=document.getElementById('c'),ctx=canvas.getContext('2d'),game=document.getElementById('game'),menu=document.getElementById('menu'),scoreEl=document.querySelector('.score');
+let W=500,H=750,scale=1,mode='speed',running=false,paused=false,launched=false,score=0,lives=3,raf=0,last=0,keys={left:false,right:false},drag=false;
+let paddle={x:205,y:710,w:90,h:13},ball={x:250,y:680,r:8,vx:3.4,vy:-4.6},bricks=[];
+function resize(){const r=game.getBoundingClientRect();scale=r.width/W;canvas.width=Math.round(r.width*devicePixelRatio);canvas.height=Math.round(r.height*devicePixelRatio);ctx.setTransform(devicePixelRatio*scale,0,0,devicePixelRatio*scale,0,0)}
+function makeBricks(){bricks=[];const cols=mode==='bricks'?8:6,rows=mode==='bricks'?5:4,gap=7,bw=(W-50-gap*(cols-1))/cols;for(let y=0;y<rows;y++)for(let x=0;x<cols;x++)bricks.push({x:25+x*(bw+gap),y:70+y*27,w:bw,h:19,on:true})}
+function resetBall(){paddle.x=(W-paddle.w)/2;ball.x=W/2;ball.y=H-72;let s=mode==='speed'?5.3:4.5;ball.vx=(Math.random()<.5?-1:1)*s*.72;ball.vy=-s;launched=false}
+function start(m){mode=m;score=0;lives=3;running=true;paused=false;launched=false;scoreEl.textContent=0;menu.classList.add('hidden');makeBricks();resetBall();cancelAnimationFrame(raf);last=performance.now();raf=requestAnimationFrame(loop)}
+function launch(){if(running&&!paused&&!launched){launched=true;beep(520,.05)}}
+function togglePause(){if(!running)return;paused=!paused;if(!paused){last=performance.now();raf=requestAnimationFrame(loop)}}
+function move(dir){paddle.x=Math.max(5,Math.min(W-paddle.w-5,paddle.x+dir*18))}
+function pointerMove(e){const r=canvas.getBoundingClientRect();paddle.x=Math.max(5,Math.min(W-paddle.w-5,(e.clientX-r.left)/scale-paddle.w/2));if(!launched)ball.x=paddle.x+paddle.w/2}
+function collide(){if(ball.x-ball.r<0){ball.x=ball.r;ball.vx=Math.abs(ball.vx)}if(ball.x+ball.r>W){ball.x=W-ball.r;ball.vx=-Math.abs(ball.vx)}if(ball.y-ball.r<0){ball.y=ball.r;ball.vy=Math.abs(ball.vy)}if(ball.y+ball.r>paddle.y&&ball.y-ball.r<paddle.y+paddle.h&&ball.x>paddle.x&&ball.x<paddle.x+paddle.w&&ball.vy>0){ball.y=paddle.y-ball.r;let hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);ball.vx=hit*6;ball.vy=-Math.max(3.8,Math.abs(ball.vy))}}
+function update(dt){if(!launched){ball.x=paddle.x+paddle.w/2;return}ball.x+=ball.vx*dt/16;ball.y+=ball.vy*dt/16;collide();for(const b of bricks){if(!b.on)continue;if(ball.x+ball.r>b.x&&ball.x-ball.r<b.x+b.w&&ball.y+ball.r>b.y&&ball.y-ball.r<b.y+b.h){b.on=false;score+=10;scoreEl.textContent=score;ball.vy*=-1;beep(720,.035);break}}if(bricks.every(b=>!b.on)){makeBricks();ball.vy*=1.08;beep(900,.08)}if(ball.y>H+20){lives--;if(lives<=0){end()}else{resetBall();beep(180,.12)}}}
+function draw(){ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.strokeStyle='#ddd';ctx.lineWidth=1;for(let x=0;x<W;x+=25){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=0;y<H;y+=25){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}bricks.forEach((b,i)=>{if(b.on){ctx.fillStyle=i%2?'#333':'#111';ctx.fillRect(b.x,b.y,b.w,b.h)}});ctx.fillStyle='#111';ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);ctx.beginPath();ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2);ctx.fill();ctx.fillStyle='#555';ctx.font='18px Arial';ctx.fillText('Lives: '+lives,18,H-18);if(paused){ctx.fillStyle='rgba(255,255,255,.8)';ctx.fillRect(0,0,W,H);ctx.fillStyle='#111';ctx.font='bold 38px Arial';ctx.textAlign='center';ctx.fillText('PAUSED',W/2,H/2);ctx.textAlign='left'}}
+function loop(now){if(!running)return;if(paused){draw();return}const dt=Math.min(32,now-last);last=now;update(dt);draw();raf=requestAnimationFrame(loop)}
+function end(){running=false;cancelAnimationFrame(raf);menu.querySelector('h1').textContent='Game Over';menu.querySelector('p').textContent='Score: '+score+' • Tap a mode to play again.';menu.classList.remove('hidden')}
+function beep(freq,dur){try{const a=new AudioContext(),o=a.createOscillator(),g=a.createGain();o.frequency.value=freq;o.type='square';g.gain.value=.035;o.connect(g);g.connect(a.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);o.stop(a.currentTime+dur)}catch(e){}}
+document.querySelectorAll('[data-mode]').forEach(b=>b.addEventListener('click',()=>start(b.dataset.mode)));
+document.getElementById('launch').addEventListener('click',launch);document.getElementById('pause').addEventListener('click',togglePause);
+document.getElementById('left').addEventListener('pointerdown',()=>keys.left=true);document.getElementById('left').addEventListener('pointerup',()=>keys.left=false);document.getElementById('left').addEventListener('pointerleave',()=>keys.left=false);
+document.getElementById('right').addEventListener('pointerdown',()=>keys.right=true);document.getElementById('right').addEventListener('pointerup',()=>keys.right=false);document.getElementById('right').addEventListener('pointerleave',()=>keys.right=false);
+canvas.addEventListener('pointerdown',e=>{drag=true;pointerMove(e);if(!launched)launch()});canvas.addEventListener('pointermove',e=>{if(drag)pointerMove(e)});canvas.addEventListener('pointerup',()=>drag=false);canvas.addEventListener('pointercancel',()=>drag=false);
+window.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a')move(-1);if(e.key==='ArrowRight'||e.key.toLowerCase()==='d')move(1);if(e.key===' '||e.key==='Enter')launch();if(e.key.toLowerCase()==='p')togglePause()});
+setInterval(()=>{if(running&&!paused){if(keys.left)move(-1);if(keys.right)move(1)}},30);window.addEventListener('resize',resize);resize();draw();
+})();
+</script>
+</body></html>
