@@ -1,0 +1,12 @@
+{
+  "games": [
+    {
+      "id": "neon-ray-arena",
+      "name": "Neon Ray Arena",
+      "version": "1.0.0",
+      "description": "Neon Ray Arena - Node Battle Simulation",
+      "entry": "neon-ray-arena.html",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neon-ray-arena/"
+    }
+  ]
+}
