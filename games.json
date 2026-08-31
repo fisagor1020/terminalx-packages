@@ -9,6 +9,16 @@
       "files": [
         "neon-ray-arena.html"
       ]
+    },
+    {
+      "id": "pacman",
+      "title": "Pacman",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/pacman/icon-pacman.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/pacman/",
+      "entry": "pacman.html",
+      "files": [
+        "pacman.html"
+      ]
     }
   ]
 }
