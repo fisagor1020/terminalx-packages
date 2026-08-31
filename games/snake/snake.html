@@ -1,1 +1,49 @@
-
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Snake — Mobile</title>
+<style>
+:root{--bg:#dcebd5;--dark:#202020;--panel:#fff;--grid:#bfd1b9}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);font-family:Arial,sans-serif;color:var(--dark);min-height:100%;overflow-x:hidden}
+body{display:flex;justify-content:center}
+#app{width:min(100%,560px);min-height:100dvh;padding:10px 12px calc(14px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:10px}
+.top{display:flex;align-items:center;justify-content:space-between}.logo{font-size:30px;font-weight:900}.stats{display:flex;gap:7px}.stat{background:#ffffffb8;border:2px solid #222;border-radius:12px;padding:6px 10px;text-align:center;font-weight:900}.stat small{display:block;font-size:9px;color:#555}
+#boardWrap{width:100%;display:flex;justify-content:center}.board{width:min(100%,500px);aspect-ratio:4/3;border:3px solid #222;background:#d5e6cf;box-shadow:inset 0 0 0 6px #b9cdb3;position:relative;touch-action:none}
+canvas{display:block;width:100%;height:100%}
+.controls{width:min(100%,420px);margin:auto;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:58px 58px 58px;gap:8px}
+button{border:2px solid #222;background:#fff;border-radius:14px;font-size:22px;font-weight:900;min-width:0}
+button:active{background:#d7e5d2;transform:scale(.97)}#up{grid-column:2}#left{grid-column:1;grid-row:2}#down{grid-column:2;grid-row:2}#right{grid-column:3;grid-row:2}#pause{grid-column:2;grid-row:3;font-size:18px}
+.note{text-align:center;font-size:12px;color:#566052}
+.overlay{position:absolute;inset:0;background:#f8fff6ee;display:flex;align-items:center;justify-content:center;padding:18px;z-index:4}.card{text-align:center;width:min(100%,390px)}h1{font-size:43px;margin:0 0 5px}p{color:#555;line-height:1.45;margin:8px 0 18px}.levels{display:grid;grid-template-columns:1fr 1fr;gap:9px}button.level{min-height:50px;font-size:16px}.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+<div class="top"><div class="logo">Snake</div><div class="stats"><div class="stat"><small>Score</small><span id="score">0</span></div><div class="stat"><small>Level</small><span id="level">Easy</span></div></div></div>
+<div id="boardWrap"><div class="board"><canvas id="c"></canvas><div class="overlay" id="overlay"><div class="card"><h1 id="title">Snake</h1><p id="desc">Choose a level, then control the snake with the buttons below.</p><div class="levels"><button class="level" data-speed="180">Easy</button><button class="level" data-speed="125">Medium</button><button class="level" data-speed="85">Hard</button><button class="level" data-speed="55">Super</button></div></div></div></div></div>
+<div class="controls"><button id="up">▲</button><button id="left">◀</button><button id="down">▼</button><button id="right">▶</button><button id="pause">⏸</button></div>
+<div class="note">You can also swipe on the board. Opposite-direction turns are blocked.</div>
+</div>
+<script>
+(()=>{const c=document.getElementById('c'),ctx=c.getContext('2d'),board=document.querySelector('.board'),overlay=document.getElementById('overlay'),title=document.getElementById('title'),desc=document.getElementById('desc'),scoreEl=document.getElementById('score'),levelEl=document.getElementById('level');
+const COLS=24,ROWS=18;let cell=20,snake=[],food={x:5,y:5},dir={x:0,y:1},next={x:0,y:1},timer=null,running=false,paused=false,score=0,speed=180,touchStart=null;
+function resize(){const r=board.getBoundingClientRect();c.width=Math.round(r.width*devicePixelRatio);c.height=Math.round(r.height*devicePixelRatio);cell=r.width/COLS;ctx.setTransform(devicePixelRatio*cell,0,0,devicePixelRatio*cell,0,0);draw()}
+function newGame(ms,name){speed=ms;levelEl.textContent=name;score=0;scoreEl.textContent=0;snake=[{x:11,y:3},{x:11,y:2},{x:11,y:1}];dir={x:0,y:1};next={x:0,y:1};placeFood();running=true;paused=false;overlay.classList.add('hidden');clearInterval(timer);timer=setInterval(step,speed);draw()}
+function placeFood(){let ok=false;while(!ok){food={x:1+Math.floor(Math.random()*(COLS-2)),y:1+Math.floor(Math.random()*(ROWS-2))};ok=!snake.some(s=>s.x===food.x&&s.y===food.y)}}
+function turn(x,y){if(!running||paused)return;if(x===-dir.x&&y===-dir.y)return;next={x,y}}
+function step(){if(!running||paused)return;dir=next;const head={x:snake[0].x+dir.x,y:snake[0].y+dir.y};if(head.x<=0||head.x>=COLS-1||head.y<=0||head.y>=ROWS-1||snake.some(s=>s.x===head.x&&s.y===head.y)){gameOver();return}snake.unshift(head);if(head.x===food.x&&head.y===food.y){score+=10;scoreEl.textContent=score;placeFood();beep(720,.04)}else snake.pop();draw()}
+function draw(){ctx.clearRect(0,0,COLS,ROWS);ctx.fillStyle='#d5e6cf';ctx.fillRect(0,0,COLS,ROWS);ctx.strokeStyle='#bfd1b9';ctx.lineWidth=.05;for(let x=0;x<COLS;x++){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,ROWS);ctx.stroke()}for(let y=0;y<ROWS;y++){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(COLS,y);ctx.stroke()}ctx.fillStyle='#202020';ctx.fillRect(food.x+.18,food.y+.18,.64,.64);snake.forEach((s,i)=>{ctx.fillStyle=i===0?'#000':'#333';ctx.fillRect(s.x+.08,s.y+.08,.84,.84);});if(paused){ctx.fillStyle='#ffffffcc';ctx.fillRect(0,0,COLS,ROWS);ctx.fillStyle='#111';ctx.font='bold 2px Arial';ctx.textAlign='center';ctx.fillText('PAUSED',COLS/2,ROWS/2);ctx.textAlign='left'}}
+function gameOver(){running=false;clearInterval(timer);title.textContent='Game Over';desc.textContent='Score: '+score+' • Choose a level to play again.';overlay.classList.remove('hidden');beep(160,.12)}
+function pause(){if(!running)return;paused=!paused;draw()}
+function beep(freq,dur){try{const a=new AudioContext(),o=a.createOscillator(),g=a.createGain();o.frequency.value=freq;o.type='square';g.gain.value=.025;o.connect(g);g.connect(a.destination);o.start();g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);o.stop(a.currentTime+dur)}catch(e){}}
+document.querySelectorAll('.level').forEach(b=>b.addEventListener('click',()=>newGame(Number(b.dataset.speed),b.textContent)));
+[['up',0,-1],['down',0,1],['left',-1,0],['right',1,0]].forEach(([id,x,y])=>document.getElementById(id).addEventListener('pointerdown',()=>turn(x,y)));document.getElementById('pause').addEventListener('click',pause);
+board.addEventListener('pointerdown',e=>{touchStart={x:e.clientX,y:e.clientY}});board.addEventListener('pointerup',e=>{if(!touchStart||!running){touchStart=null;return}const dx=e.clientX-touchStart.x,dy=e.clientY-touchStart.y;touchStart=null;if(Math.max(Math.abs(dx),Math.abs(dy))<20)return;if(Math.abs(dx)>Math.abs(dy))turn(dx>0?1:-1,0);else turn(0,dy>0?1:-1)});
+window.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key.toLowerCase()==='w')turn(0,-1);if(e.key==='ArrowDown'||e.key.toLowerCase()==='s')turn(0,1);if(e.key==='ArrowLeft'||e.key.toLowerCase()==='a')turn(-1,0);if(e.key==='ArrowRight'||e.key.toLowerCase()==='d')turn(1,0);if(e.key.toLowerCase()==='p')pause()});
+window.addEventListener('resize',resize);resize();
+})();
+</script>
+</body></html>
