@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>2048 Puzzle - Touch & Fullscreen</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: none; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #f8fafc; }
+    #game-container { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: space-between; align-items: center; padding: 12px; }
+    .header-row { width: 100%; max-width: 420px; display: flex; justify-content: space-between; align-items: center; }
+    .title-area h1 { font-size: 32px; font-weight: 900; color: #f59e0b; line-height: 1; }
+    .title-area p { font-size: 11px; color: #94a3b8; }
+    .scores-row { display: flex; gap: 8px; }
+    .score-card { background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 6px 12px; text-align: center; min-width: 70px; }
+    .score-lbl { font-size: 10px; color: #94a3b8; font-weight: 700; }
+    .score-val { font-size: 16px; font-weight: 800; color: #38bdf8; }
+    .tools-bar { width: 100%; max-width: 420px; display: flex; justify-content: space-between; align-items: center; }
+    .btn-action { background: rgba(30, 41, 59, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 8px 14px; border-radius: 10px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .board-wrap { flex: 1; display: flex; justify-content: center; align-items: center; width: 100%; max-width: 420px; }
+    #grid { width: min(88vw, 360px); height: min(88vw, 360px); background: #1e293b; border-radius: 16px; padding: 10px; display: grid; grid-template-columns: repeat(4, 1fr); grid-gap: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 2px solid rgba(255,255,255,0.05); }
+    .cell { background: rgba(255,255,255,0.05); border-radius: 10px; display: flex; justify-content: center; align-items: center; font-size: 24px; font-weight: 800; transition: transform 0.15s ease, background 0.15s ease; }
+    .dpad-row { display: flex; justify-content: center; gap: 8px; width: 100%; max-width: 280px; margin-bottom: 4px; }
+    .d-btn { flex: 1; height: 44px; background: rgba(30, 41, 59, 0.9); border: 1px solid rgba(255,255,255,0.15); border-radius: 12px; color: #fff; font-size: 18px; display: flex; justify-content: center; align-items: center; cursor: pointer; }
+    .d-btn:active { background: #f59e0b; color: #000; }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div class="header-row">
+      <div class="title-area">
+        <h1>2048</h1>
+        <p>Join tiles to reach 2048!</p>
+      </div>
+      <div class="scores-row">
+        <div class="score-card">
+          <div class="score-lbl">SCORE</div>
+          <div class="score-val" id="score">0</div>
+        </div>
+        <div class="score-card">
+          <div class="score-lbl">BEST</div>
+          <div class="score-val" id="best">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tools-bar">
+      <button class="btn-action" id="newGameBtn">🔄 New Game</button>
+      <button class="btn-action" id="soundBtn">🔊 Sound</button>
+      <button class="btn-action" id="fsBtn">⛶ Full</button>
+    </div>
+
+    <div class="board-wrap">
+      <div id="grid"></div>
+    </div>
+
+    <div class="dpad-row">
+      <button class="d-btn" id="btnLeft">◀</button>
+      <button class="d-btn" id="btnUp">▲</button>
+      <button class="d-btn" id="btnDown">▼</button>
+      <button class="d-btn" id="btnRight">▶</button>
+    </div>
+  </div>
+
+  <script>
+    const gridEl = document.getElementById('grid');
+    const scoreEl = document.getElementById('score');
+    const bestEl = document.getElementById('best');
+    const soundBtn = document.getElementById('soundBtn');
+    const fsBtn = document.getElementById('fsBtn');
+    const newGameBtn = document.getElementById('newGameBtn');
+
+    let audioCtx = null;
+    let soundEnabled = true;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    function playChime(freq) {
+      if (!soundEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.12);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 0.12);
+      } catch(e) {}
+    }
+
+    soundBtn.addEventListener('click', () => {
+      initAudio();
+      soundEnabled = !soundEnabled;
+      soundBtn.textContent = soundEnabled ? '🔊 Sound' : '🔇 Muted';
+    });
+    fsBtn.addEventListener('click', () => {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+      else document.exitFullscreen().catch(()=>{});
+    });
+
+    const COLOR_MAP = {
+      2: { bg: '#e2e8f0', color: '#1e293b' },
+      4: { bg: '#fed7aa', color: '#7c2d12' },
+      8: { bg: '#fdba74', color: '#fff' },
+      16: { bg: '#fb923c', color: '#fff' },
+      32: { bg: '#f97316', color: '#fff' },
+      64: { bg: '#ea580c', color: '#fff' },
+      128: { bg: '#fef08a', color: '#713f12' },
+      256: { bg: '#fde047', color: '#713f12' },
+      512: { bg: '#facc15', color: '#000' },
+      1024: { bg: '#38bdf8', color: '#000' },
+      2048: { bg: '#a855f7', color: '#fff' },
+      4096: { bg: '#ec4899', color: '#fff' }
+    };
+
+    let board = Array(4).fill(null).map(() => Array(4).fill(0));
+    let score = 0;
+    let best = parseInt(localStorage.getItem('2048_best') || '0', 10);
+    bestEl.textContent = best;
+
+    function init() {
+      board = Array(4).fill(null).map(() => Array(4).fill(0));
+      score = 0;
+      scoreEl.textContent = score;
+      addRandomTile();
+      addRandomTile();
+      render();
+    }
+
+    function addRandomTile() {
+      const empty = [];
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          if (board[r][c] === 0) empty.push({r, c});
+        }
+      }
+      if (empty.length > 0) {
+        const spot = empty[Math.floor(Math.random() * empty.length)];
+        board[spot.r][spot.c] = Math.random() < 0.9 ? 2 : 4;
+      }
+    }
+
+    function render() {
+      gridEl.innerHTML = '';
+      for (let r = 0; r < 4; r++) {
+        for (let c = 0; c < 4; c++) {
+          const val = board[r][c];
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          if (val > 0) {
+            cell.textContent = val;
+            const style = COLOR_MAP[val] || { bg: '#3b82f6', color: '#fff' };
+            cell.style.background = style.bg;
+            cell.style.color = style.color;
+            if (val > 512) cell.style.boxShadow = '0 0 15px ' + style.bg;
+          }
+          gridEl.appendChild(cell);
+        }
+      }
+    }
+
+    function slide(row) {
+      let arr = row.filter(val => val);
+      let missing = 4 - arr.length;
+      let zeros = Array(missing).fill(0);
+      return arr.concat(zeros);
+    }
+
+    function combine(row) {
+      for (let i = 0; i < 3; i++) {
+        if (row[i] !== 0 && row[i] === row[i + 1]) {
+          row[i] *= 2;
+          score += row[i];
+          scoreEl.textContent = score;
+          playChime(300 + Math.min(row[i] * 5, 800));
+          if (score > best) {
+            best = score;
+            bestEl.textContent = best;
+            localStorage.setItem('2048_best', best);
+          }
+          row[i + 1] = 0;
+        }
+      }
+      return row;
+    }
+
+    function moveLeft() {
+      let changed = false;
+      for (let r = 0; r < 4; r++) {
+        let old = [...board[r]];
+        let row = slide(board[r]);
+        row = combine(row);
+        row = slide(row);
+        board[r] = row;
+        if (old.some((v, idx) => v !== row[idx])) changed = true;
+      }
+      return changed;
+    }
+
+    function moveRight() {
+      let changed = false;
+      for (let r = 0; r < 4; r++) {
+        let old = [...board[r]];
+        let row = board[r].reverse();
+        row = slide(row);
+        row = combine(row);
+        row = slide(row);
+        board[r] = row.reverse();
+        if (old.some((v, idx) => v !== board[r][idx])) changed = true;
+      }
+      return changed;
+    }
+
+    function moveUp() {
+      let changed = false;
+      for (let c = 0; c < 4; c++) {
+        let col = [board[0][c], board[1][c], board[2][c], board[3][c]];
+        let old = [...col];
+        col = slide(col);
+        col = combine(col);
+        col = slide(col);
+        for (let r = 0; r < 4; r++) board[r][c] = col[r];
+        if (old.some((v, idx) => v !== col[idx])) changed = true;
+      }
+      return changed;
+    }
+
+    function moveDown() {
+      let changed = false;
+      for (let c = 0; c < 4; c++) {
+        let col = [board[3][c], board[2][c], board[1][c], board[0][c]];
+        let old = [...col];
+        col = slide(col);
+        col = combine(col);
+        col = slide(col);
+        col.reverse();
+        for (let r = 0; r < 4; r++) board[r][c] = col[r];
+        if (old.some((v, idx) => v !== col[3-idx])) changed = true;
+      }
+      return changed;
+    }
+
+    function handleMove(dir) {
+      initAudio();
+      let changed = false;
+      if (dir === 'left') changed = moveLeft();
+      if (dir === 'right') changed = moveRight();
+      if (dir === 'up') changed = moveUp();
+      if (dir === 'down') changed = moveDown();
+
+      if (changed) {
+        addRandomTile();
+        render();
+      }
+    }
+
+    document.getElementById('btnLeft').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('left'); });
+    document.getElementById('btnRight').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('right'); });
+    document.getElementById('btnUp').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('up'); });
+    document.getElementById('btnDown').addEventListener('pointerdown', (e) => { e.preventDefault(); handleMove('down'); });
+    newGameBtn.addEventListener('click', init);
+
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowLeft', 'KeyA'].includes(e.code)) { e.preventDefault(); handleMove('left'); }
+      if (['ArrowRight', 'KeyD'].includes(e.code)) { e.preventDefault(); handleMove('right'); }
+      if (['ArrowUp', 'KeyW'].includes(e.code)) { e.preventDefault(); handleMove('up'); }
+      if (['ArrowDown', 'KeyS'].includes(e.code)) { e.preventDefault(); handleMove('down'); }
+    });
+
+    // Touch Swipe Detection
+    let touchStartX = 0, touchStartY = 0;
+    gridEl.addEventListener('touchstart', (e) => {
+      touchStartX = e.touches[0].clientX;
+      touchStartY = e.touches[0].clientY;
+    }, {passive: false});
+
+    gridEl.addEventListener('touchend', (e) => {
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      const dy = e.changedTouches[0].clientY - touchStartY;
+      if (Math.hypot(dx, dy) < 25) return;
+      if (Math.abs(dx) > Math.abs(dy)) {
+        handleMove(dx > 0 ? 'right' : 'left');
+      } else {
+        handleMove(dy > 0 ? 'down' : 'up');
+      }
+    }, {passive: false});
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Highway Traffic Dodger - Touch & Fullscreen</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    body, html { width: 100%; height: 100%; overflow: hidden; background: #0f172a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #fff; }
+    #game-container { position: relative; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; }
+    canvas { display: block; max-width: 100%; max-height: 100%; object-fit: contain; }
+    .hud { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 12px; }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; }
+    .stat-chip { background: rgba(15, 23, 42, 0.85); border: 1px solid rgba(255,255,255,0.15); padding: 6px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; backdrop-filter: blur(6px); }
+    .btn-hud { background: rgba(30, 41, 59, 0.9); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 12px; border-radius: 999px; font-size: 12px; cursor: pointer; }
+    .steer-buttons { display: flex; justify-content: space-between; gap: 16px; width: 100%; max-width: 360px; margin: 0 auto; pointer-events: auto; padding-bottom: 8px; }
+    .steer-btn { flex: 1; height: 50px; background: rgba(30, 41, 59, 0.85); border: 1px solid rgba(255,255,255,0.2); border-radius: 16px; color: #fff; font-size: 20px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; }
+    .steer-btn:active { background: #38bdf8; color: #000; }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <canvas id="canvas"></canvas>
+    <div class="hud">
+      <div class="top-bar">
+        <div class="stat-chip" style="color:#facc15;">🟡 <span id="coinsText">0</span></div>
+        <div class="stat-chip" style="color:#38bdf8;">DIST: <span id="distText">0</span>m</div>
+        <button class="btn-hud" id="soundBtn">🔊 Sound</button>
+        <button class="btn-hud" id="fsBtn">⛶ Full</button>
+      </div>
+
+      <div class="steer-buttons">
+        <button class="steer-btn" id="btnLeft">◀ STEER LEFT</button>
+        <button class="steer-btn" id="btnRight">STEER RIGHT ▶</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const coinsText = document.getElementById('coinsText');
+    const distText = document.getElementById('distText');
+    const soundBtn = document.getElementById('soundBtn');
+    const fsBtn = document.getElementById('fsBtn');
+
+    const W = 360;
+    const H = 600;
+    canvas.width = W;
+    canvas.height = H;
+
+    let audioCtx = null;
+    let soundEnabled = true;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    function playSound(freq, dur=0.08, type='sine') {
+      if (!soundEnabled || !audioCtx) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const g = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        g.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + dur);
+      } catch(e) {}
+    }
+
+    soundBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      initAudio();
+      soundEnabled = !soundEnabled;
+      soundBtn.textContent = soundEnabled ? '🔊 Sound' : '🔇 Muted';
+    });
+
+    fsBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(()=>{});
+      else document.exitFullscreen().catch(()=>{});
+    });
+
+    const LANES = [80, 180, 280];
+    let playerLane = 1;
+    let playerX = LANES[1];
+    const playerY = H - 90;
+    const playerW = 44;
+    const playerH = 70;
+
+    let traffic = [];
+    let coins = [];
+    let particles = [];
+    let distance = 0;
+    let coinCount = 0;
+    let speed = 6;
+    let isGameOver = false;
+    let roadOffset = 0;
+
+    function moveLane(dir) {
+      initAudio();
+      if (isGameOver) { resetGame(); return; }
+      playerLane = Math.max(0, Math.min(2, playerLane + dir));
+      playSound(380, 0.05, 'triangle');
+    }
+
+    document.getElementById('btnLeft').addEventListener('pointerdown', (e) => { e.preventDefault(); moveLane(-1); });
+    document.getElementById('btnRight').addEventListener('pointerdown', (e) => { e.preventDefault(); moveLane(1); });
+
+    window.addEventListener('keydown', (e) => {
+      if (['ArrowLeft', 'KeyA'].includes(e.code)) { e.preventDefault(); moveLane(-1); }
+      if (['ArrowRight', 'KeyD'].includes(e.code)) { e.preventDefault(); moveLane(1); }
+      if (e.code === 'Space' && isGameOver) resetGame();
+    });
+
+    // Touch tap left or right half
+    canvas.addEventListener('pointerdown', (e) => {
+      initAudio();
+      if (isGameOver) { resetGame(); return; }
+      const rect = canvas.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      if (clickX < rect.width / 2) moveLane(-1);
+      else moveLane(1);
+    });
+
+    function spawnTraffic() {
+      const lane = Math.floor(Math.random() * 3);
+      const types = ['#ef4444', '#f97316', '#a855f7', '#10b981'];
+      traffic.push({
+        lane: lane,
+        x: LANES[lane],
+        y: -100,
+        w: 42,
+        h: 68,
+        color: types[Math.floor(Math.random() * types.length)],
+        speed: Math.random() * 2 + 3
+      });
+    }
+
+    function spawnCoin() {
+      const lane = Math.floor(Math.random() * 3);
+      coins.push({
+        lane: lane,
+        x: LANES[lane],
+        y: -50,
+        radius: 12
+      });
+    }
+
+    function resetGame() {
+      traffic = [];
+      coins = [];
+      particles = [];
+      distance = 0;
+      coinCount = 0;
+      speed = 6;
+      playerLane = 1;
+      playerX = LANES[1];
+      isGameOver = false;
+      coinsText.textContent = '0';
+      distText.textContent = '0';
+    }
+
+    function drawCar(x, y, color, isPlayer=false) {
+      ctx.save();
+      ctx.translate(x, y);
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.4)';
+      ctx.beginPath();
+      ctx.roundRect(-playerW/2 + 2, -playerH/2 + 4, playerW, playerH, 8);
+      ctx.fill();
+
+      // Car Body
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.roundRect(-playerW/2, -playerH/2, playerW, playerH, 8);
+      ctx.fill();
+
+      // Roof / Windshield
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.roundRect(-playerW/2 + 6, -playerH/2 + 16, playerW - 12, 36, 4);
+      ctx.fill();
+
+      // Glass shine
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillRect(-playerW/2 + 8, -playerH/2 + 18, playerW - 16, 8);
+
+      // Headlights / Taillights
+      if (isPlayer) {
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(-playerW/2 + 4, -playerH/2 + 2, 8, 4);
+        ctx.fillRect(playerW/2 - 12, -playerH/2 + 2, 8, 4);
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(-playerW/2 + 4, playerH/2 - 6, 8, 4);
+        ctx.fillRect(playerW/2 - 12, playerH/2 - 6, 8, 4);
+      } else {
+        ctx.fillStyle = '#ef4444';
+        ctx.fillRect(-playerW/2 + 4, -playerH/2 + 2, 8, 4);
+        ctx.fillRect(playerW/2 - 12, -playerH/2 + 2, 8, 4);
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(-playerW/2 + 4, playerH/2 - 6, 8, 4);
+        ctx.fillRect(playerW/2 - 12, playerH/2 - 6, 8, 4);
+      }
+
+      ctx.restore();
+    }
+
+    let frame = 0;
+    function update() {
+      if (isGameOver) return;
+      frame++;
+      distance += Math.floor(speed / 2);
+      distText.textContent = distance;
+      speed = 6 + Math.min(6, distance / 500);
+
+      // Lerp player towards target lane X
+      playerX += (LANES[playerLane] - playerX) * 0.25;
+
+      roadOffset = (roadOffset + speed) % 40;
+
+      // Spawn traffic
+      if (frame % Math.max(35, 75 - Math.floor(distance/200)) === 0) {
+        spawnTraffic();
+      }
+      if (frame % 80 === 0) {
+        spawnCoin();
+      }
+
+      // Update traffic
+      for (let i = traffic.length - 1; i >= 0; i--) {
+        const car = traffic[i];
+        car.y += (speed - car.speed + 4);
+        if (car.y > H + 100) { traffic.splice(i, 1); continue; }
+
+        // Hit box
+        if (
+          Math.abs(car.x - playerX) < (playerW * 0.75) &&
+          Math.abs(car.y - playerY) < (playerH * 0.75)
+        ) {
+          isGameOver = true;
+          playSound(150, 0.4, 'sawtooth');
+          for (let p = 0; p < 20; p++) {
+            particles.push({
+              x: playerX, y: playerY,
+              vx: (Math.random() - 0.5) * 6,
+              vy: (Math.random() - 0.5) * 6,
+              color: '#ef4444',
+              life: 1
+            });
+          }
+        }
+      }
+
+      // Update coins
+      for (let i = coins.length - 1; i >= 0; i--) {
+        const c = coins[i];
+        c.y += speed;
+        if (c.y > H + 50) { coins.splice(i, 1); continue; }
+
+        if (Math.hypot(c.x - playerX, c.y - playerY) < 32) {
+          coinCount += 10;
+          coinsText.textContent = coinCount;
+          playSound(750, 0.1, 'sine');
+          coins.splice(i, 1);
+        }
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+
+      // Road background
+      ctx.fillStyle = '#1e293b';
+      ctx.fillRect(20, 0, W - 40, H);
+
+      // Road borders
+      ctx.fillStyle = '#ef4444';
+      ctx.fillRect(16, 0, 8, H);
+      ctx.fillRect(W - 24, 0, 8, H);
+
+      // Lane dividers
+      ctx.strokeStyle = '#f8fafc';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([20, 20]);
+      ctx.lineDashOffset = -roadOffset;
+
+      ctx.beginPath();
+      ctx.moveTo(130, 0); ctx.lineTo(130, H);
+      ctx.moveTo(230, 0); ctx.lineTo(230, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Coins
+      coins.forEach(c => {
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.radius, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#ca8a04';
+        ctx.beginPath();
+        ctx.arc(c.x, c.y, c.radius - 3, 0, Math.PI*2);
+        ctx.fill();
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('$', c.x, c.y + 4);
+      });
+
+      // Traffic Cars
+      traffic.forEach(car => {
+        drawCar(car.x, car.y, car.color, false);
+      });
+
+      // Player Car
+      drawCar(playerX, playerY, '#0284c7', true);
+
+      // Particles
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx; pt.y += pt.vy;
+        pt.life -= 0.04;
+        if (pt.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.fillStyle = pt.color;
+        ctx.globalAlpha = pt.life;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, 3, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+
+      if (isGameOver) {
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = '#ef4444';
+        ctx.font = 'bold 28px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('CRASHED!', W / 2, H / 2 - 30);
+        ctx.fillStyle = '#fff';
+        ctx.font = '16px sans-serif';
+        ctx.fillText('Distance: ' + distance + 'm', W / 2, H / 2 + 10);
+        ctx.fillStyle = '#facc15';
+        ctx.fillText('Coins: ' + coinCount, W / 2, H / 2 + 35);
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText('Tap Screen to Restart', W / 2, H / 2 + 75);
+      }
+    }
+
+    function loop() {
+      update();
+      draw();
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>

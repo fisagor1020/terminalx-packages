@@ -54,7 +54,65 @@
       "entry": "bouncetalepro.html",
       "files": ["bouncetalepro.html"]
     },
-    
+ 
+
+
+  {
+  "id": "towerjumper",
+  "title": "Tower Jumper",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/towerjumper/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/towerjumper/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},
+{
+  "id": "highwaytrafficdodger",
+  "title": "Highway Traffic Dodger",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/highwaytrafficdodger/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/highwaytrafficdodger/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},
+{
+  "id": "neonpongmaster",
+  "title": "Neon Pong Master",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neonpongmaster/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neonpongmaster/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},
+{
+  "id": "spaceshooter",
+  "title": "Space Shooter",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/spaceshooter/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/spaceshooter/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},
+{
+  "id": "2048",
+  "title": "2048",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/2048/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/2048/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},
+{
+  "id": "snakeclassic",
+  "title": "Snake Classic",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snakeclassic/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snakeclassic/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},
+{
+  "id": "flappybird",
+  "title": "Flappy Bird",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/flappybird/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/flappybird/",
+  "entry": "index.html",
+  "files": ["index.html"]
+}, 
     {
       "id": "pacman",
       "title": "Pacman",
