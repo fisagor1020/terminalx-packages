@@ -1,5 +1,7 @@
 {
   "games": [
+  
+  
   {
       "id": "motorider3d",
       "title": "Moto Rider 3D",
@@ -34,6 +36,25 @@
       "entry": "bounce.html",
       "files": ["bounce.html"]
     },
+    
+      {
+      "id": "puzzleworldpro",
+      "title": "Puzzle World Pro",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/puzzleworldpro/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/puzzleworldpro/",
+      "entry": "puzzleworldpro.html",
+      "files": ["puzzleworldpro.html"]
+    },
+    
+    {
+      "id": "bouncetalepro",
+      "title": "Bounce Tale Pro",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/bouncetalepro/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/bouncetalepro/",
+      "entry": "bouncetalepro.html",
+      "files": ["bouncetalepro.html"]
+    },
+    
     {
       "id": "pacman",
       "title": "Pacman",
