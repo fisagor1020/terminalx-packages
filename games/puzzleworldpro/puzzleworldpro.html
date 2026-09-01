@@ -1,1 +1,775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Puzzle World PRO - Advanced Match-3</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body {
+    background: #060813;
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 10px;
+    touch-action: manipulation;
+  }
+  .phone-container {
+    background: #13122b;
+    border: 3px solid #6366f1;
+    border-radius: 24px;
+    padding: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 360px;
+    width: 100%;
+  }
+  .screen-bezel {
+    background: #020617;
+    border: 3px solid #1e1b4b;
+    border-radius: 12px;
+    padding: 4px;
+    width: 240px;
+    height: 320px;
+  }
+  canvas {
+    display: block;
+    width: 240px;
+    height: 320px;
+    background: #0f172a;
+    border-radius: 6px;
+  }
+  .keypad {
+    margin-top: 14px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+  .softkeys {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 10px;
+  }
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 48px);
+    grid-template-rows: repeat(3, 48px);
+    gap: 4px;
+    justify-content: center;
+  }
+  .btn {
+    background: #312e81;
+    color: #e0e7ff;
+    border: 1px solid #4f46e5;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1e1b4b;
+  }
+  .btn:active {
+    transform: translateY(2px);
+    background: #6366f1;
+    color: #fff;
+  }
+  .btn-soft {
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+  .btn-select {
+    background: #a855f7;
+    border-color: #c084fc;
+    color: white;
+  }
+  .info-bar {
+    font-size: 11px;
+    color: #a5b4fc;
+    margin-top: 8px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
 
+<div class="phone-container">
+  <div style="font-size: 13px; font-weight: 800; color: #a855f7; margin-bottom: 8px; letter-spacing: 1px;">
+    🔮 PUZZLE WORLD PRO
+  </div>
+
+  <div class="screen-bezel">
+    <canvas id="gameCanvas" width="240" height="320"></canvas>
+  </div>
+
+  <div class="keypad">
+    <div class="softkeys">
+      <button class="btn btn-soft" id="btn-lsk">LEVELS [1]</button>
+      <div style="width:76px"></div>
+    </div>
+    <div class="dpad">
+      <div></div>
+      <button class="btn" id="btn-up">▲ [2]</button>
+      <div></div>
+      <button class="btn" id="btn-left">◀ [4]</button>
+      <button class="btn btn-select" id="btn-ok">OK [5]</button>
+      <button class="btn" id="btn-right">▶ [6]</button>
+      <div></div>
+      <button class="btn" id="btn-down">▼ [8]</button>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="info-bar">
+    10 levels • Obstacle blocks, match-4 line-clear gems, match-5 color bombs, combo multipliers, star ratings<br>
+    Touch or D-Pad to select &amp; swap adjacent gems
+  </div>
+</div>
+
+<script>
+// ================= Puzzle World PRO - Advanced Match-3 =================
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playTone(freq, dur = 0.08, type = 'sine', vol = 0.12) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + dur);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + dur);
+  } catch (e) {}
+}
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = 240, H = 320;
+const ROWS = 8, COLS = 7;
+const CELL = 28;
+const offX = 22, offY = 56;
+const MAX_LEVEL = 10;
+const STORAGE_KEY = 'puzzleWorldProgress';
+
+const GEM_COLORS = ['#38bdf8', '#ef4444', '#22c55e', '#facc15', '#a855f7'];
+const NUM_COLORS = GEM_COLORS.length;
+// cell type codes: 0..4 normal gems, 10..14 line-clear specials (per color),
+// 20 = color bomb, -1 empty, -2 wall/obstacle
+
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { unlocked: 1, stars: {} };
+}
+function saveProgress(p) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch (e) {}
+}
+let progress = loadProgress();
+
+// ---------------- Level config ----------------
+function levelConfig(n) {
+  const rng = mulberry32(n * 5303 + 91);
+  const targetScore = 1200 + n * 450;
+  const moves = Math.max(26 - n, 14);
+  const wallCount = Math.min(Math.max(n - 1, 0) * 2, 14);
+  const walls = [];
+  let tries = 0;
+  while (walls.length < wallCount && tries < 200) {
+    tries++;
+    const r = 1 + Math.floor(rng() * (ROWS - 2));
+    const c = Math.floor(rng() * COLS);
+    if (!walls.some(w => w.r === r && w.c === c)) walls.push({ r, c });
+  }
+  return { targetScore, moves, walls };
+}
+
+let grid = [];
+let anim = []; // per-cell animation offsets {dy} for fall-in effect
+let curX = 3, curY = 3;
+let selX = -1, selY = -1;
+let score = 0, targetScore = 1500, moves = 20, level = 1;
+let combo = 0;
+let gameState = 'MENU'; // MENU, PLAY, RESOLVING, LEVELCOMPLETE, GAMEOVER
+let menuSel = 0;
+let earnedStars = 0;
+let particles = [];
+let floaters = []; // floating score text
+let cfg = null;
+let busy = false;
+
+function isWall(r, c) { return grid[r][c] === -2; }
+
+function randomGemAvoidMatch(r, c, rng) {
+  // avoid creating an accidental 3-match on initial fill
+  let color;
+  let attempt = 0;
+  do {
+    color = Math.floor((rng ? rng() : Math.random()) * NUM_COLORS);
+    attempt++;
+  } while (attempt < 20 && (
+    (c >= 2 && grid[r][c - 1] === color && grid[r][c - 2] === color) ||
+    (r >= 2 && grid[r - 1] && grid[r - 1][c] === color && grid[r - 2] && grid[r - 2][c] === color)
+  ));
+  return color;
+}
+
+function initBoard(n) {
+  const rng = mulberry32(n * 911 + 3);
+  grid = [];
+  for (let r = 0; r < ROWS; r++) {
+    grid[r] = [];
+    for (let c = 0; c < COLS; c++) grid[r][c] = 0;
+  }
+  for (const w of cfg.walls) grid[w.r][w.c] = -2;
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      if (isWall(r, c)) continue;
+      grid[r][c] = randomGemAvoidMatch(r, c, rng);
+    }
+  }
+}
+
+function startLevel(n) {
+  level = n;
+  cfg = levelConfig(n);
+  score = 0;
+  targetScore = cfg.targetScore;
+  moves = cfg.moves;
+  combo = 0;
+  selX = -1; selY = -1;
+  particles = []; floaters = [];
+  gameState = 'PLAY';
+  initBoard(n);
+}
+
+function spawnParticles(x, y, color, count = 10) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y, vx: (Math.random() - 0.5) * 4, vy: (Math.random() - 0.5) * 4 - 1,
+      life: 22 + Math.random() * 10, maxLife: 32, color,
+    });
+  }
+}
+function spawnFloater(x, y, text, color) {
+  floaters.push({ x, y, text, color, life: 40, maxLife: 40 });
+}
+function updateFX() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.15; p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 0.5; f.life--;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
+}
+
+// ---------------- Match detection ----------------
+// Returns array of match-groups; each group = {cells:[[r,c],...], color, isRow, isCol}
+function findMatchGroups() {
+  const groups = [];
+  const claimed = Array.from({ length: ROWS }, () => Array(COLS).fill(false));
+
+  // Horizontal runs
+  for (let r = 0; r < ROWS; r++) {
+    let c = 0;
+    while (c < COLS) {
+      const g = grid[r][c];
+      if (g < 0) { c++; continue; }
+      let runEnd = c;
+      while (runEnd + 1 < COLS && grid[r][runEnd + 1] === g) runEnd++;
+      const len = runEnd - c + 1;
+      if (len >= 3) {
+        const cells = [];
+        for (let cc = c; cc <= runEnd; cc++) { cells.push([r, cc]); claimed[r][cc] = true; }
+        groups.push({ cells, color: g, horizontal: true, len });
+      }
+      c = runEnd + 1;
+    }
+  }
+  // Vertical runs
+  for (let c = 0; c < COLS; c++) {
+    let r = 0;
+    while (r < ROWS) {
+      const g = grid[r][c];
+      if (g < 0) { r++; continue; }
+      let runEnd = r;
+      while (runEnd + 1 < ROWS && grid[runEnd + 1][c] === g) runEnd++;
+      const len = runEnd - r + 1;
+      if (len >= 3) {
+        const cells = [];
+        for (let rr = r; rr <= runEnd; rr++) { cells.push([rr, c]); claimed[rr][c] = true; }
+        groups.push({ cells, color: g, horizontal: false, len });
+      }
+      r = runEnd + 1;
+    }
+  }
+  return groups;
+}
+
+function normalGemColor(v) {
+  if (v >= 0 && v < NUM_COLORS) return v;       // normal
+  if (v >= 10 && v < 10 + NUM_COLORS) return v - 10; // line special retains a color
+  return -1; // bomb has no single color
+}
+
+function trySwap(r1, c1, r2, c2) {
+  if (busy) return;
+  if (isWall(r1, c1) || isWall(r2, c2)) { playTone(160, 0.08, 'square'); return; }
+  const a = grid[r1][c1], b = grid[r2][c2];
+
+  // swapping with a special gem triggers its effect immediately (classic match-3 combo move)
+  if (a === 20 || b === 20) {
+    grid[r1][c1] = b; grid[r2][c2] = a;
+    moves--;
+    busy = true;
+    detonateBomb(a === 20 ? r1 : r2, a === 20 ? c1 : c2, a === 20 ? normalGemColor(b) : normalGemColor(a));
+    setTimeout(processBoard, 260);
+    return;
+  }
+
+  grid[r1][c1] = b; grid[r2][c2] = a;
+  const groups = findMatchGroups();
+  if (groups.length > 0) {
+    moves--;
+    combo = 0;
+    busy = true;
+    playTone(600, 0.08);
+    resolveGroups(groups, [r1, c1, r2, c2]);
+  } else {
+    grid[r2][c2] = grid[r1][c1] === b ? a : b; // revert safely
+    grid[r1][c1] = a; grid[r2][c2] = b;
+    playTone(200, 0.1);
+  }
+}
+
+function detonateBomb(r, c, targetColor) {
+  const cells = [];
+  for (let rr = 0; rr < ROWS; rr++) {
+    for (let cc = 0; cc < COLS; cc++) {
+      if (isWall(rr, cc)) continue;
+      const col = normalGemColor(grid[rr][cc]);
+      if (targetColor === -1 ? grid[rr][cc] >= 0 : col === targetColor) cells.push([rr, cc]);
+    }
+  }
+  cells.push([r, c]);
+  const cx = offX + c * CELL + CELL / 2, cy = offY + r * CELL + CELL / 2;
+  spawnParticles(cx, cy, targetColor >= 0 ? GEM_COLORS[targetColor] : '#ffffff', 20);
+  score += cells.length * 40;
+  spawnFloater(cx, cy - 10, `+${cells.length * 40}`, '#facc15');
+  playTone(200, 0.3, 'sawtooth', 0.15);
+  for (const [rr, cc] of cells) grid[rr][cc] = -1;
+}
+
+function clearLineSpecial(r, c, color) {
+  const cx = offX + c * CELL + CELL / 2;
+  const cy = offY + r * CELL + CELL / 2;
+  // row+col clear centered on the special
+  for (let cc = 0; cc < COLS; cc++) if (!isWall(r, cc) && grid[r][cc] !== -1) grid[r][cc] = -1;
+  for (let rr = 0; rr < ROWS; rr++) if (!isWall(rr, c) && grid[rr][c] !== -1) grid[rr][c] = -1;
+  spawnParticles(cx, cy, GEM_COLORS[color] || '#fff', 14);
+  playTone(700, 0.15, 'triangle');
+}
+
+function resolveGroups(groups, swapCells) {
+  let cleared = 0;
+  const specialsToCreate = [];
+
+  for (const grp of groups) {
+    cleared += grp.cells.length;
+    // choose position for special: prefer a swapped cell within this group
+    let specialPos = grp.cells[Math.floor(grp.cells.length / 2)];
+    if (swapCells) {
+      for (let i = 0; i < swapCells.length; i += 2) {
+        const rr = swapCells[i], cc = swapCells[i + 1];
+        if (grp.cells.some(([gr, gc]) => gr === rr && gc === cc)) specialPos = [rr, cc];
+      }
+    }
+    if (grp.len >= 5) {
+      specialsToCreate.push({ r: specialPos[0], c: specialPos[1], type: 20 });
+    } else if (grp.len === 4) {
+      specialsToCreate.push({ r: specialPos[0], c: specialPos[1], type: 10 + grp.color });
+    }
+    for (const [r, c] of grp.cells) {
+      const cx = offX + c * CELL + CELL / 2, cy = offY + r * CELL + CELL / 2;
+      spawnParticles(cx, cy, GEM_COLORS[grp.color] || '#fff', 6);
+    }
+  }
+
+  // clear matched cells (but not where a special will spawn, handled after)
+  for (const grp of groups) {
+    for (const [r, c] of grp.cells) grid[r][c] = -1;
+  }
+  for (const s of specialsToCreate) grid[s.r][s.c] = s.type;
+
+  combo++;
+  const base = cleared * 50;
+  const bonus = Math.floor(base * (combo - 1) * 0.5);
+  score += base + bonus;
+  const midCell = groups[0].cells[0];
+  const cx = offX + midCell[1] * CELL + CELL / 2, cy = offY + midCell[0] * CELL + CELL / 2;
+  spawnFloater(cx, cy - 10, combo > 1 ? `+${base + bonus} x${combo}` : `+${base}`, combo > 1 ? '#f472b6' : '#facc15');
+  playTone(700 + combo * 60, 0.1, 'sine');
+
+  setTimeout(dropAndRefill, 180);
+}
+
+function dropAndRefill() {
+  const rng = Math.random;
+  for (let c = 0; c < COLS; c++) {
+    // process contiguous non-wall segments per column independently
+    let segStart = 0;
+    for (let r = 0; r <= ROWS; r++) {
+      if (r === ROWS || isWall(r, c)) {
+        // segment [segStart, r-1]
+        let empty = r - 1;
+        for (let rr = r - 1; rr >= segStart; rr--) {
+          if (grid[rr][c] !== -1) {
+            if (empty !== rr) { grid[empty][c] = grid[rr][c]; grid[rr][c] = -1; }
+            empty--;
+          }
+        }
+        for (let rr = empty; rr >= segStart; rr--) grid[rr][c] = Math.floor(rng() * NUM_COLORS);
+        segStart = r + 1;
+      }
+    }
+  }
+  setTimeout(processBoard, 200);
+}
+
+function processBoard() {
+  const groups = findMatchGroups();
+  if (groups.length === 0) {
+    busy = false;
+    if (score >= targetScore) {
+      finishLevel(true);
+    } else if (moves <= 0) {
+      finishLevel(false);
+    }
+    return;
+  }
+  resolveGroups(groups, null);
+}
+
+function finishLevel(won) {
+  if (won) {
+    const movesLeftRatio = moves / cfg.moves;
+    let stars = 1;
+    if (movesLeftRatio >= 0.2) stars = 2;
+    if (movesLeftRatio >= 0.45) stars = 3;
+    earnedStars = stars;
+    progress.stars[level] = Math.max(progress.stars[level] || 0, stars);
+    if (level >= progress.unlocked && level < MAX_LEVEL) progress.unlocked = level + 1;
+    saveProgress(progress);
+    gameState = 'LEVELCOMPLETE';
+    playTone(880, 0.3);
+  } else {
+    gameState = 'GAMEOVER';
+    playTone(150, 0.3);
+  }
+}
+
+function handleSelect(col, row) {
+  if (gameState !== 'PLAY' || busy) return;
+  if (isWall(row, col)) { playTone(150, 0.06, 'square'); return; }
+  if (selX === -1) {
+    selX = col; selY = row;
+    playTone(500, 0.04);
+  } else {
+    const dx = Math.abs(selX - col);
+    const dy = Math.abs(selY - row);
+    if ((dx === 1 && dy === 0) || (dx === 0 && dy === 1)) {
+      const sX = selX, sY = selY;
+      selX = -1; selY = -1;
+      trySwap(sY, sX, row, col);
+    } else {
+      selX = col; selY = row;
+      playTone(500, 0.04);
+    }
+  }
+}
+
+// ---------------- Drawing ----------------
+function drawGem(x, y, v) {
+  if (v === -1 || v === -2) return;
+  if (v >= 0 && v < NUM_COLORS) {
+    ctx.fillStyle = GEM_COLORS[v];
+    ctx.beginPath();
+    ctx.roundRect(x + 3, y + 3, CELL - 6, CELL - 6, 6);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.fillRect(x + 6, y + 6, 3, 3);
+  } else if (v >= 10 && v < 10 + NUM_COLORS) {
+    const color = GEM_COLORS[v - 10];
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.roundRect(x + 2, y + 2, CELL - 4, CELL - 4, 8);
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x + 5, y + CELL / 2 - 1, CELL - 10, 2);
+    ctx.strokeRect(x + CELL / 2 - 1, y + 5, 2, CELL - 10);
+  } else if (v === 20) {
+    const grad = ctx.createRadialGradient(x + CELL / 2, y + CELL / 2, 1, x + CELL / 2, y + CELL / 2, CELL / 2);
+    grad.addColorStop(0, '#ffffff');
+    grad.addColorStop(0.4, '#1e293b');
+    grad.addColorStop(1, '#000000');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(x + CELL / 2, y + CELL / 2, CELL / 2 - 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+  }
+}
+
+function drawWall(x, y) {
+  ctx.fillStyle = '#334155';
+  ctx.fillRect(x + 2, y + 2, CELL - 4, CELL - 4);
+  ctx.strokeStyle = '#0f172a';
+  ctx.strokeRect(x + 2, y + 2, CELL - 4, CELL - 4);
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(x + 6, y + 6, CELL - 12, CELL - 12);
+}
+
+function drawGameBoard() {
+  ctx.fillStyle = '#0f172a';
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.fillStyle = '#1e1b4b';
+  ctx.fillRect(0, 0, W, 48);
+  ctx.fillStyle = '#facc15';
+  ctx.font = 'bold 12px sans-serif';
+  ctx.fillText(`Score: ${score}/${targetScore}`, 10, 20);
+  ctx.fillStyle = moves <= 5 ? '#ef4444' : '#4ade80';
+  ctx.fillText(`Moves: ${moves}`, W - 75, 20);
+  ctx.fillStyle = '#a5b4fc';
+  ctx.font = '9px sans-serif';
+  ctx.fillText(`Level ${level}`, 10, 44);
+
+  const prog = Math.min(1, score / targetScore);
+  ctx.fillStyle = '#312e81';
+  ctx.fillRect(10, 32, W - 20, 6);
+  ctx.fillStyle = '#38bdf8';
+  ctx.fillRect(10, 32, (W - 20) * prog, 6);
+
+  ctx.fillStyle = '#18182f';
+  ctx.fillRect(offX - 2, offY - 2, COLS * CELL + 4, ROWS * CELL + 4);
+  ctx.strokeStyle = '#4338ca';
+  ctx.strokeRect(offX - 2, offY - 2, COLS * CELL + 4, ROWS * CELL + 4);
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const x = offX + c * CELL;
+      const y = offY + r * CELL;
+      ctx.fillStyle = (r + c) % 2 === 0 ? '#1e1e38' : '#141428';
+      ctx.fillRect(x, y, CELL, CELL);
+      const g = grid[r][c];
+      if (g === -2) drawWall(x, y);
+      else drawGem(x, y, g);
+    }
+  }
+
+  if (selX >= 0) {
+    ctx.strokeStyle = '#facc15';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(offX + selX * CELL, offY + selY * CELL, CELL, CELL);
+  }
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(offX + curX * CELL - 1, offY + curY * CELL - 1, CELL + 2, CELL + 2);
+
+  // particles
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  // floaters
+  ctx.font = 'bold 11px sans-serif';
+  ctx.textAlign = 'center';
+  for (const f of floaters) {
+    ctx.globalAlpha = Math.max(0, f.life / f.maxLife);
+    ctx.fillStyle = f.color;
+    ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+}
+
+function drawOverlayBox(title, color, lines, y0 = 90, hgt = 130) {
+  ctx.fillStyle = 'rgba(0,0,0,0.85)';
+  ctx.fillRect(20, y0, W - 40, hgt);
+  ctx.strokeStyle = color;
+  ctx.strokeRect(20, y0, W - 40, hgt);
+  ctx.fillStyle = color;
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(title, W / 2, y0 + 28);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '11px sans-serif';
+  lines.forEach((line, i) => ctx.fillText(line, W / 2, y0 + 52 + i * 18));
+  ctx.textAlign = 'left';
+}
+
+function drawMenu() {
+  ctx.fillStyle = '#0b0a1f';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#a855f7';
+  ctx.font = 'bold 17px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('PUZZLE WORLD', W / 2, 34);
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#a5b4fc';
+  ctx.fillText('Select a level', W / 2, 50);
+
+  const cols = 4, cell = 48, startX = (W - cols * cell) / 2, startY = 66;
+  for (let i = 0; i < MAX_LEVEL; i++) {
+    const lvl = i + 1;
+    const cx = startX + (i % cols) * cell + cell / 2;
+    const cy = startY + Math.floor(i / cols) * cell + cell / 2;
+    const unlocked = lvl <= progress.unlocked;
+    const selected = i === menuSel;
+
+    ctx.fillStyle = unlocked ? (selected ? '#6366f1' : '#1e1b4b') : '#111827';
+    ctx.beginPath();
+    ctx.roundRect(cx - 20, cy - 20, 40, 40, 8);
+    ctx.fill();
+    if (selected) { ctx.strokeStyle = '#c084fc'; ctx.lineWidth = 2; ctx.stroke(); }
+
+    ctx.fillStyle = unlocked ? '#f1f5f9' : '#475569';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(unlocked ? String(lvl) : '🔒', cx, cy + 5);
+
+    const st = progress.stars[lvl] || 0;
+    if (unlocked && st > 0) {
+      ctx.font = '8px sans-serif';
+      ctx.fillStyle = '#facc15';
+      ctx.fillText('★'.repeat(st) + '☆'.repeat(3 - st), cx, cy + 16);
+    }
+  }
+  ctx.fillStyle = '#a5b4fc';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('Arrows: move • OK: play', W / 2, H - 14);
+  ctx.textAlign = 'left';
+}
+
+function draw() {
+  if (gameState === 'MENU') { drawMenu(); return; }
+  drawGameBoard();
+  if (gameState === 'LEVELCOMPLETE') {
+    const stars = '★'.repeat(earnedStars) + '☆'.repeat(3 - earnedStars);
+    drawOverlayBox('STAGE CLEARED!', '#4ade80', [
+      `Score: ${score}`,
+      stars,
+      level < MAX_LEVEL ? 'OK: Next Level' : 'OK: Level Select',
+    ]);
+  } else if (gameState === 'GAMEOVER') {
+    drawOverlayBox('OUT OF MOVES!', '#ef4444', [
+      `Score: ${score}/${targetScore}`,
+      'OK: Retry   MENU: Levels',
+    ]);
+  }
+}
+
+function loop() {
+  updateFX();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+
+// ---------------- Input ----------------
+function pressOK() {
+  if (gameState === 'MENU') {
+    const lvl = menuSel + 1;
+    if (lvl <= progress.unlocked) startLevel(lvl);
+  } else if (gameState === 'LEVELCOMPLETE') {
+    if (level < MAX_LEVEL) startLevel(level + 1);
+    else gameState = 'MENU';
+  } else if (gameState === 'GAMEOVER') {
+    startLevel(level);
+  } else if (gameState === 'PLAY') {
+    handleSelect(curX, curY);
+  }
+}
+function pressMenu() { gameState = 'MENU'; }
+function moveMenuSel(dx, dy) {
+  const cols = 4;
+  let r = Math.floor(menuSel / cols), c = menuSel % cols;
+  c = Math.max(0, Math.min(cols - 1, c + dx));
+  r = Math.max(0, Math.min(Math.ceil(MAX_LEVEL / cols) - 1, r + dy));
+  const idx = r * cols + c;
+  if (idx >= 0 && idx < MAX_LEVEL) menuSel = idx;
+}
+
+canvas.addEventListener('click', (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = W / rect.width;
+  const scaleY = H / rect.height;
+  const cx = Math.floor(((e.clientX - rect.left) * scaleX - offX) / CELL);
+  const cy = Math.floor(((e.clientY - rect.top) * scaleY - offY) / CELL);
+  if (gameState === 'PLAY' && cx >= 0 && cx < COLS && cy >= 0 && cy < ROWS) {
+    curX = cx; curY = cy;
+    handleSelect(cx, cy);
+  } else if (gameState !== 'PLAY') {
+    pressOK();
+  }
+});
+
+document.getElementById('btn-up').onclick = () => { if (gameState === 'MENU') moveMenuSel(0, -1); else curY = Math.max(0, curY - 1); };
+document.getElementById('btn-down').onclick = () => { if (gameState === 'MENU') moveMenuSel(0, 1); else curY = Math.min(ROWS - 1, curY + 1); };
+document.getElementById('btn-left').onclick = () => { if (gameState === 'MENU') moveMenuSel(-1, 0); else curX = Math.max(0, curX - 1); };
+document.getElementById('btn-right').onclick = () => { if (gameState === 'MENU') moveMenuSel(1, 0); else curX = Math.min(COLS - 1, curX + 1); };
+document.getElementById('btn-ok').onclick = pressOK;
+document.getElementById('btn-lsk').onclick = pressMenu;
+
+window.addEventListener('keydown', (e) => {
+  if (gameState === 'MENU') {
+    if (e.key === 'ArrowUp' || e.key === 'w') moveMenuSel(0, -1);
+    if (e.key === 'ArrowDown' || e.key === 's') moveMenuSel(0, 1);
+    if (e.key === 'ArrowLeft' || e.key === 'a') moveMenuSel(-1, 0);
+    if (e.key === 'ArrowRight' || e.key === 'd') moveMenuSel(1, 0);
+  } else {
+    if (e.key === 'ArrowUp' || e.key === 'w') curY = Math.max(0, curY - 1);
+    if (e.key === 'ArrowDown' || e.key === 's') curY = Math.min(ROWS - 1, curY + 1);
+    if (e.key === 'ArrowLeft' || e.key === 'a') curX = Math.max(0, curX - 1);
+    if (e.key === 'ArrowRight' || e.key === 'd') curX = Math.min(COLS - 1, curX + 1);
+  }
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); pressOK(); }
+  if (e.key === 'Escape') pressMenu();
+});
+</script>
+</body>
+</html>
