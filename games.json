@@ -19,7 +19,38 @@
       "entry": "snake.html",
       "files": ["snake.html"]
     },
-    
+{
+  "id": "15puzzle",
+  "title": "15 Puzzle",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/15puzzle/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/15puzzle/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},
+{
+  "id": "dinorunner",
+  "title": "T-Rex Dino Runner",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/dinorunner/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/dinorunner/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},
+{
+  "id": "fruitninja",
+  "title": "Fruit Slicer Ninja",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/fruitninja/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/fruitninja/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},
+{
+  "id": "memorymatch",
+  "title": "Memory Card Match",
+  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/memorymatch/icon.webp",
+  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/memorymatch/",
+  "entry": "index.html",
+  "files": ["index.html"]
+},    
     {
       "id": "tetris",
       "title": "Tetris Game",
