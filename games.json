@@ -38,12 +38,12 @@
     },
     
       {
-      "id": "puzzleworldpro",
-      "title": "Puzzle World Pro",
-      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/puzzleworldpro/icon.webp",
-      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/puzzleworldpro/",
-      "entry": "puzzleworldpro.html",
-      "files": ["puzzleworldpro.html"]
+      "id": "candypop",
+      "title": "Candy Pop",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/candypop/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/candypop/",
+      "entry": "candypop.html",
+      "files": ["candypop.html"]
     },
     
     {
