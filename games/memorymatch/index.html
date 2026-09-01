@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Memory Card Match</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body { background: #0c1222; color: #fff; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 12px; }
+  #game-box { background: #1e293b; border: 2px solid #334155; border-radius: 20px; padding: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.7); max-width: 420px; width: 100%; display: flex; flex-direction: column; align-items: center; }
+  .header-stats { width: 100%; display: flex; justify-content: space-between; align-items: center; background: #0f172a; padding: 10px 16px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 14px; font-family: monospace; font-size: 14px; font-weight: bold; }
+  .stat-highlight { color: #38bdf8; }
+  #card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; width: 100%; aspect-ratio: 1/1; }
+  .card { aspect-ratio: 1/1; perspective: 1000px; cursor: pointer; }
+  .card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.4s; transform-style: preserve-3d; border-radius: 12px; }
+  .card.flipped .card-inner { transform: rotateY(180deg); }
+  .card.matched .card-inner { transform: rotateY(180deg); animation: pop 0.4s ease-out; }
+  @keyframes pop { 50% { transform: rotateY(180deg) scale(1.15); } }
+  .card-front, .card-back { position: absolute; width: 100%; height: 100%; -webkit-backface-visibility: hidden; backface-visibility: hidden; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+  .card-front { background: linear-gradient(135deg, #0284c7, #0369a1); border: 2px solid #38bdf8; color: #fff; }
+  .card-back { background: #0f172a; border: 2px solid #38bdf8; transform: rotateY(180deg); }
+  .card.matched .card-back { background: #064e3b; border-color: #10b981; }
+  .btn-restart { margin-top: 14px; width: 100%; padding: 12px; background: #38bdf8; color: #0f172a; font-weight: 900; font-size: 14px; border: none; border-radius: 12px; cursor: pointer; }
+  .btn-restart:active { opacity: 0.8; }
+</style>
+</head>
+<body>
+
+<div id="game-box">
+  <div class="header-stats">
+    <div>MOVES: <span id="moves-val" class="stat-highlight">0</span></div>
+    <div>PAIRS: <span id="pairs-val" class="stat-highlight" style="color:#4ade80;">0/8</span></div>
+    <div>TIME: <span id="time-val" class="stat-highlight" style="color:#facc15;">0s</span></div>
+  </div>
+
+  <div id="card-grid"></div>
+
+  <button class="btn-restart" id="btn-restart">নতুন কার্ড সাজান (RESTART)</button>
+</div>
+
+<script>
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  let actx = null;
+  function initAudio() { if (!actx) actx = new AudioCtx(); if (actx.state === 'suspended') actx.resume(); }
+  function playSound(type) {
+    if (!actx) return;
+    try {
+      const osc = actx.createOscillator();
+      const gain = actx.createGain();
+      osc.connect(gain); gain.connect(actx.destination);
+      const t = actx.currentTime;
+      if (type === 'flip') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(400, t); osc.frequency.linearRampToValueAtTime(700, t + 0.08);
+        gain.gain.setValueAtTime(0.15, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.08);
+        osc.start(t); osc.stop(t + 0.08);
+      } else if (type === 'match') {
+        osc.type = 'triangle'; osc.frequency.setValueAtTime(523, t); osc.frequency.setValueAtTime(659, t + 0.1); osc.frequency.setValueAtTime(784, t + 0.2);
+        gain.gain.setValueAtTime(0.25, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.3);
+        osc.start(t); osc.stop(t + 0.3);
+      } else if (type === 'nomatch') {
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(220, t); osc.frequency.linearRampToValueAtTime(140, t + 0.15);
+        gain.gain.setValueAtTime(0.15, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.15);
+        osc.start(t); osc.stop(t + 0.15);
+      } else if (type === 'win') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(523, t); osc.frequency.setValueAtTime(659, t + 0.1); osc.frequency.setValueAtTime(784, t + 0.2); osc.frequency.setValueAtTime(1046, t + 0.3);
+        gain.gain.setValueAtTime(0.3, t); gain.gain.linearRampToValueAtTime(0.01, t + 0.5);
+        osc.start(t); osc.stop(t + 0.5);
+      }
+    } catch(e){}
+  }
+
+  const ICONS = ['🚀', '🍕', '🎮', '💎', '🦁', '🥑', '🎸', '⚽'];
+  let cards = [];
+  let flippedCards = [];
+  let matchedPairs = 0;
+  let moves = 0;
+  let time = 0;
+  let timerInterval = null;
+  let lockBoard = false;
+
+  const cardGrid = document.getElementById('card-grid');
+  const movesVal = document.getElementById('moves-val');
+  const pairsVal = document.getElementById('pairs-val');
+  const timeVal = document.getElementById('time-val');
+  const btnRestart = document.getElementById('btn-restart');
+
+  function initGame() {
+    clearInterval(timerInterval);
+    timerInterval = null;
+    time = 0;
+    moves = 0;
+    matchedPairs = 0;
+    flippedCards = [];
+    lockBoard = false;
+    timeVal.textContent = '0s';
+    movesVal.textContent = '0';
+    pairsVal.textContent = '0/8';
+
+    // Duplicate and shuffle
+    const deck = [...ICONS, ...ICONS].sort(() => Math.random() - 0.5);
+
+    cardGrid.innerHTML = '';
+    cards = deck.map((icon, index) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="card-inner">
+          <div class="card-front">❓</div>
+          <div class="card-back">${icon}</div>
+        </div>
+      `;
+      card.addEventListener('click', () => handleCardClick(card, icon));
+      cardGrid.appendChild(card);
+      return { el: card, icon, matched: false };
+    });
+  }
+
+  function startTimer() {
+    if (!timerInterval) {
+      timerInterval = setInterval(() => {
+        time++;
+        timeVal.textContent = time + 's';
+      }, 1000);
+    }
+  }
+
+  function handleCardClick(cardEl, icon) {
+    initAudio();
+    if (lockBoard) return;
+    if (cardEl.classList.contains('flipped') || cardEl.classList.contains('matched')) return;
+
+    startTimer();
+    cardEl.classList.add('flipped');
+    playSound('flip');
+    flippedCards.push({ el: cardEl, icon });
+
+    if (flippedCards.length === 2) {
+      moves++;
+      movesVal.textContent = moves;
+      checkForMatch();
+    }
+  }
+
+  function checkForMatch() {
+    lockBoard = true;
+    const [c1, c2] = flippedCards;
+
+    if (c1.icon === c2.icon) {
+      // Match
+      setTimeout(() => {
+        c1.el.classList.add('matched');
+        c2.el.classList.add('matched');
+        matchedPairs++;
+        pairsVal.textContent = matchedPairs + '/8';
+        playSound('match');
+        flippedCards = [];
+        lockBoard = false;
+
+        if (matchedPairs === 8) {
+          clearInterval(timerInterval);
+          playSound('win');
+        }
+      }, 350);
+    } else {
+      // No match
+      setTimeout(() => {
+        playSound('nomatch');
+        c1.el.classList.remove('flipped');
+        c2.el.classList.remove('flipped');
+        flippedCards = [];
+        lockBoard = false;
+      }, 900);
+    }
+  }
+
+  btnRestart.addEventListener('click', () => { initAudio(); initGame(); });
+
+  initGame();
+</script>
+</body>
+</html>

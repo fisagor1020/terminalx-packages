@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>15 Puzzle</title>
+    <style>
+    * {
+    box-sizing: border-box
+}
+
+body {
+    font-family: Inter, Segoe UI, Arial, sans-serif;
+    background: linear-gradient(180deg, #0b1020, #061024);
+    color: #e6eef8;
+    display: flex;
+    min-height: 100vh;
+    align-items: center;
+    justify-content: center;
+    margin: 0
+}
+
+.puzzle {
+    width: 360px;
+    padding: 20px
+}
+
+.puzzle__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px
+}
+
+h1 {
+    font-size: 20px;
+    margin: 0
+}
+
+.controls button {
+    background: linear-gradient(135deg, #58a6ff, #a855f7);
+    border: none;
+    color: #051024;
+    padding: 8px 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 700
+}
+
+.controls button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed
+}
+
+.board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 10px;
+    border-radius: 12px
+}
+
+.tile {
+    aspect-ratio: 1/1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(180deg, #1270d6, #3a2a7a);
+    border-radius: 8px;
+    font-weight: 800;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 8px 18px rgba(3, 6, 18, 0.5);
+    transition: transform 140ms ease
+}
+
+.tile.empty {
+    background: transparent;
+    box-shadow: none;
+    cursor: default
+}
+
+.hint {
+    opacity: 0.85;
+    color: var(--text-300);
+    font-size: 13px;
+    margin-top: 12px
+}
+</style>
+</head>
+
+<body>
+    <main class="puzzle">
+        <header class="puzzle__header">
+            <h1>15 Puzzle</h1>
+            <div class="controls">
+                <button id="shuffle">Shuffle</button>
+                <button id="solve" disabled>Auto Solve</button>
+            </div>
+        </header>
+
+        <section id="board" class="board" aria-label="15 puzzle board"></section>
+        <p class="hint">Click/tap a tile adjacent to the empty space to slide. Arrange tiles 1–15 in order.</p>
+
+        <script>'use strict';
+
+const SIZE = 4;
+const board = document.getElementById('board');
+const shuffleBtn = document.getElementById('shuffle');
+const solveBtn = document.getElementById('solve');
+
+let state = [];
+
+function makeSolved() {
+  const arr = [];
+  for (let i=1;i<SIZE*SIZE;i++) arr.push(i);
+  arr.push(0);
+  return arr;
+}
+
+function render() {
+  board.innerHTML = '';
+  for (let i=0;i<state.length;i++){
+    const val = state[i];
+    const tile = document.createElement('div');
+    tile.className = 'tile' + (val===0? ' empty':'');
+    tile.textContent = val===0? '' : String(val);
+    tile.dataset.index = i;
+    if (val!==0) tile.addEventListener('click', onTileClick);
+    board.appendChild(tile);
+  }
+}
+
+function canMove(index){
+  const r = Math.floor(index/SIZE), c = index%SIZE;
+  const empty = state.indexOf(0);
+  const er = Math.floor(empty/SIZE), ec = empty%SIZE;
+  const dr = Math.abs(r-er), dc = Math.abs(c-ec);
+  return (dr+dc)===1;
+}
+
+function onTileClick(e){
+  const i = Number(e.currentTarget.dataset.index);
+  if (!canMove(i)) return;
+  const empty = state.indexOf(0);
+  [state[i], state[empty]] = [state[empty], state[i]];
+  render();
+  if (isSolved()) setTimeout(()=> alert('Solved!'), 120);
+}
+
+function shuffle() {
+  // simple Fisher-Yates shuffle until solvable
+  do {
+    for (let i=state.length-1;i>0;i--) {
+      const j = Math.floor(Math.random()*(i+1));
+      [state[i], state[j]] = [state[j], state[i]];
+    }
+  } while (!isSolvable() || isSolved());
+  render();
+}
+
+function isSolvable(){
+  // count inversions
+  const arr = state.filter(n=>n!==0);
+  let inv=0;
+  for (let i=0;i<arr.length;i++) for (let j=i+1;j<arr.length;j++) if (arr[i]>arr[j]) inv++;
+  const rowFromBottom = SIZE - Math.floor(state.indexOf(0)/SIZE);
+  if (SIZE%2===1) return inv%2===0;
+  return (rowFromBottom%2===0) ? inv%2===1 : inv%2===0;
+}
+
+function isSolved(){
+  for (let i=0;i<state.length-1;i++) if (state[i] !== i+1) return false;
+  return state[state.length-1]===0;
+}
+
+shuffleBtn.addEventListener('click', shuffle);
+
+// keyboard controls
+window.addEventListener('keydown', e=>{
+  const empty = state.indexOf(0);
+  const er = Math.floor(empty/SIZE), ec = empty%SIZE;
+  let moved=false;
+  if (e.key === 'ArrowUp' && er < SIZE-1) { // move tile down into empty
+    const idx = (er+1)*SIZE + ec; [state[empty], state[idx]] = [state[idx], state[empty]]; moved=true;
+  } else if (e.key === 'ArrowDown' && er > 0) {
+    const idx = (er-1)*SIZE + ec; [state[empty], state[idx]] = [state[idx], state[empty]]; moved=true;
+  } else if (e.key === 'ArrowLeft' && ec < SIZE-1) {
+    const idx = er*SIZE + (ec+1); [state[empty], state[idx]] = [state[idx], state[empty]]; moved=true;
+  } else if (e.key === 'ArrowRight' && ec > 0) {
+    const idx = er*SIZE + (ec-1); [state[empty], state[idx]] = [state[idx], state[empty]]; moved=true;
+  }
+  if (moved) { render(); if (isSolved()) setTimeout(()=> alert('Solved!'), 120); }
+});
+
+// init
+state = makeSolved();
+shuffle();
+</script>
+    </main>
+</body>
+
+</html>
