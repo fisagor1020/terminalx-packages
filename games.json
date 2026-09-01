@@ -1,5 +1,14 @@
 {
   "games": [
+  {
+      "id": "motorider3d",
+      "title": "Moto Rider 3D",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/motorider3d/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/motorider3d/",
+      "entry": "motorider3d.html",
+      "files": ["motorider3d.html"]
+    },
+    
     {
       "id": "snake",
       "title": "Snake Game",
@@ -8,14 +17,7 @@
       "entry": "snake.html",
       "files": ["snake.html"]
     },
-    {
-      "id": "motorider3d",
-      "title": "Moto Rider 3D",
-      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/motorider3d/icon.webp",
-      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/motorider3d/",
-      "entry": "motorider3d.html",
-      "files": ["motorider3d.html"]
-    },
+    
     {
       "id": "tetris",
       "title": "Tetris Game",
