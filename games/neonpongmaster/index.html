@@ -16,6 +16,7 @@
     .p1-score { color: #38bdf8; }
     .p2-score { color: #f43f5e; }
     .hint { text-align: center; color: rgba(255,255,255,0.5); font-size: 12px; }
+    .sub-bar { display: flex; justify-content: center; pointer-events: auto; margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -27,6 +28,9 @@
         <div class="score-board"><span class="p2-score" id="aiScore">0</span> : <span class="p1-score" id="playerScore">0</span></div>
         <button class="btn-hud" id="soundBtn">🔊 Sound</button>
         <button class="btn-hud" id="fsBtn">⛶ Full</button>
+      </div>
+      <div class="sub-bar" id="diffBar">
+        <button class="btn-hud" id="diffBtn">🟡 Medium</button>
       </div>
       <div class="hint">Slide finger or mouse on bottom to control your paddle</div>
     </div>
@@ -40,6 +44,8 @@
     const modeBtn = document.getElementById('modeBtn');
     const soundBtn = document.getElementById('soundBtn');
     const fsBtn = document.getElementById('fsBtn');
+    const diffBtn = document.getElementById('diffBtn');
+    const diffBar = document.getElementById('diffBar');
 
     const W = 380;
     const H = 600;
@@ -83,8 +89,28 @@
       e.stopPropagation();
       twoPlayerMode = !twoPlayerMode;
       modeBtn.textContent = twoPlayerMode ? '👥 2-Player' : '🎮 VS AI';
+      diffBar.style.display = twoPlayerMode ? 'none' : 'flex';
       resetGame();
     });
+
+    // Difficulty settings for the AI opponent
+    const difficulties = {
+      easy:   { label: '🟢 Easy',   lerp: 0.045, maxSpeed: 3.0, error: 40, growth: 0.05, growthCap: 1.0 },
+      medium: { label: '🟡 Medium', lerp: 0.09,  maxSpeed: 5.0, error: 18, growth: 0.08, growthCap: 1.5 },
+      hard:   { label: '🔴 Hard',   lerp: 0.16,  maxSpeed: 8.0, error: 6,  growth: 0.12, growthCap: 2.0 }
+    };
+    const diffOrder = ['easy', 'medium', 'hard'];
+    let difficulty = 'medium';
+    function updateDiffBtn() { diffBtn.textContent = difficulties[difficulty].label; }
+    updateDiffBtn();
+    diffBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      difficulty = diffOrder[(diffOrder.indexOf(difficulty) + 1) % diffOrder.length];
+      updateDiffBtn();
+      resetGame();
+    });
+    let aiTargetError = 0;
+    let aiErrorAssigned = false;
 
     const paddleW = 80;
     const paddleH = 12;
@@ -136,6 +162,8 @@
       oScore = 0;
       isGameOver = false;
       winner = '';
+      aiErrorAssigned = false;
+      aiTargetError = 0;
       playerScoreEl.textContent = '0';
       aiScoreEl.textContent = '0';
       resetBall(true);
@@ -193,9 +221,23 @@
 
       // Opponent AI (if 1P)
       if (!twoPlayerMode) {
-        const targetX = ball.x - opponent.w / 2;
-        const aiSpeed = 3.6 + Math.min(2.5, (pScore + oScore) * 0.2);
-        opponent.x += (targetX - opponent.x) * 0.12;
+        const diff = difficulties[difficulty];
+        // Pick a fresh prediction error each time the ball starts heading
+        // toward the AI, so it doesn't track the ball with pixel-perfect
+        // accuracy. A bigger error (easy) means it aims for the wrong spot.
+        if (ball.vy < 0) {
+          if (!aiErrorAssigned) {
+            aiTargetError = (Math.random() * 2 - 1) * diff.error;
+            aiErrorAssigned = true;
+          }
+        } else {
+          aiErrorAssigned = false;
+        }
+        const maxSpeed = diff.maxSpeed + Math.min(diff.growthCap, (pScore + oScore) * diff.growth);
+        const targetX = ball.x + aiTargetError - opponent.w / 2;
+        let dx = (targetX - opponent.x) * diff.lerp;
+        dx = Math.max(-maxSpeed, Math.min(maxSpeed, dx));
+        opponent.x += dx;
         opponent.x = Math.max(0, Math.min(W - opponent.w, opponent.x));
       }
 
