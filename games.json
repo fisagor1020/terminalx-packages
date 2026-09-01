@@ -1,63 +1,81 @@
 {
   "games": [
-  
-  
-  {
+    {
       "id": "motorider3d",
       "title": "Moto Rider 3D",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/motorider3d/icon.webp",
       "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/motorider3d/",
       "entry": "motorider3d.html",
-      "files": ["motorider3d.html"]
+      "files": [
+        "motorider3d.html"
+      ],
+      "version": 1
     },
-    
     {
       "id": "snake",
       "title": "Snake Game",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snake/icon.webp",
       "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snake/",
       "entry": "snake.html",
-      "files": ["snake.html"]
+      "files": [
+        "snake.html"
+      ],
+      "version": 1
     },
-{
-  "id": "15puzzle",
-  "title": "15 Puzzle",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/15puzzle/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/15puzzle/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},
-{
-  "id": "dinorunner",
-  "title": "T-Rex Dino Runner",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/dinorunner/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/dinorunner/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},
-{
-  "id": "fruitninja",
-  "title": "Fruit Slicer Ninja",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/fruitninja/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/fruitninja/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},
-{
-  "id": "memorymatch",
-  "title": "Memory Card Match",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/memorymatch/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/memorymatch/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},    
+    {
+      "id": "15puzzle",
+      "title": "15 Puzzle",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/15puzzle/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/15puzzle/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
+    {
+      "id": "dinorunner",
+      "title": "T-Rex Dino Runner",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/dinorunner/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/dinorunner/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
+    {
+      "id": "fruitninja",
+      "title": "Fruit Slicer Ninja",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/fruitninja/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/fruitninja/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
+    {
+      "id": "memorymatch",
+      "title": "Memory Card Match",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/memorymatch/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/memorymatch/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
     {
       "id": "tetris",
       "title": "Tetris Game",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/tetris/icon.webp",
       "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/tetris/",
       "entry": "tetris.html",
-      "files": ["tetris.html"]
+      "files": [
+        "tetris.html"
+      ],
+      "version": 1
     },
     {
       "id": "bounce",
@@ -65,92 +83,120 @@
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/bounce/icon.webp",
       "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/bounce/",
       "entry": "bounce.html",
-      "files": ["bounce.html"]
+      "files": [
+        "bounce.html"
+      ],
+      "version": 1
     },
-    
-      {
+    {
       "id": "candypop",
       "title": "Candy Pop",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/candypop/icon.webp",
       "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/candypop/",
       "entry": "candypop.html",
-      "files": ["candypop.html"]
+      "files": [
+        "candypop.html"
+      ],
+      "version": 1
     },
-    
     {
       "id": "bouncetalepro",
       "title": "Bounce Tale Pro",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/bouncetalepro/icon.webp",
       "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/bouncetalepro/",
       "entry": "bouncetalepro.html",
-      "files": ["bouncetalepro.html"]
+      "files": [
+        "bouncetalepro.html"
+      ],
+      "version": 1
     },
- 
-
-
-  {
-  "id": "towerjumper",
-  "title": "Tower Jumper",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/towerjumper/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/towerjumper/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},
-{
-  "id": "highwaytrafficdodger",
-  "title": "Highway Traffic Dodger",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/highwaytrafficdodger/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/highwaytrafficdodger/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},
-{
-  "id": "neonpongmaster",
-  "title": "Neon Pong Master",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neonpongmaster/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neonpongmaster/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},
-{
-  "id": "spaceshooter",
-  "title": "Space Shooter",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/spaceshooter/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/spaceshooter/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},
-{
-  "id": "2048",
-  "title": "2048",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/2048/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/2048/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},
-{
-  "id": "snakeclassic",
-  "title": "Snake Classic",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snakeclassic/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snakeclassic/",
-  "entry": "index.html",
-  "files": ["index.html"]
-},
-{
-  "id": "flappybird",
-  "title": "Flappy Bird",
-  "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/flappybird/icon.webp",
-  "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/flappybird/",
-  "entry": "index.html",
-  "files": ["index.html"]
-}, 
+    {
+      "id": "towerjumper",
+      "title": "Tower Jumper",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/towerjumper/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/towerjumper/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
+    {
+      "id": "highwaytrafficdodger",
+      "title": "Highway Traffic Dodger",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/highwaytrafficdodger/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/highwaytrafficdodger/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
+    {
+      "id": "neonpongmaster",
+      "title": "Neon Pong Master",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neonpongmaster/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/neonpongmaster/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
+    {
+      "id": "spaceshooter",
+      "title": "Space Shooter",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/spaceshooter/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/spaceshooter/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
+    {
+      "id": "2048",
+      "title": "2048",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/2048/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/2048/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
+    {
+      "id": "snakeclassic",
+      "title": "Snake Classic",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snakeclassic/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/snakeclassic/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
+    {
+      "id": "flappybird",
+      "title": "Flappy Bird",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/flappybird/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/flappybird/",
+      "entry": "index.html",
+      "files": [
+        "index.html"
+      ],
+      "version": 1
+    },
     {
       "id": "pacman",
       "title": "Pacman",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/pacman/icon.webp",
       "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/pacman/",
       "entry": "pacman.html",
-      "files": ["pacman.html"]
+      "files": [
+        "pacman.html"
+      ],
+      "version": 1
     }
   ]
 }
