@@ -1,1 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Bounce Tales PRO - Advanced Edition</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body {
+    background: #090d16;
+    color: #f1f5f9;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 10px;
+    touch-action: manipulation;
+  }
+  .phone-container {
+    background: #1e293b;
+    border: 3px solid #334155;
+    border-radius: 24px;
+    padding: 16px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 360px;
+    width: 100%;
+  }
+  .screen-bezel {
+    background: #020617;
+    border: 3px solid #0f172a;
+    border-radius: 12px;
+    padding: 4px;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.8);
+    position: relative;
+    width: 240px;
+    height: 320px;
+  }
+  canvas {
+    display: block;
+    width: 240px;
+    height: 320px;
+    image-rendering: pixelated;
+    background: #60a5fa;
+    border-radius: 6px;
+  }
+  .keypad {
+    margin-top: 14px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+  .softkeys {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0 10px;
+  }
+  .dpad {
+    display: grid;
+    grid-template-columns: repeat(3, 48px);
+    grid-template-rows: repeat(3, 48px);
+    gap: 4px;
+    justify-content: center;
+    margin: 4px 0;
+  }
+  .btn {
+    background: #334155;
+    color: #e2e8f0;
+    border: 1px solid #475569;
+    border-radius: 10px;
+    font-weight: bold;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 3px 0 #1e293b;
+    transition: all 0.05s ease;
+  }
+  .btn:active, .btn.active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #1e293b;
+    background: #0284c7;
+    color: #fff;
+  }
+  .btn-soft {
+    padding: 8px 14px;
+    border-radius: 12px;
+    font-size: 12px;
+  }
+  .btn-action {
+    background: #0284c7;
+    border-color: #38bdf8;
+    color: white;
+  }
+  .info-bar {
+    font-size: 11px;
+    color: #94a3b8;
+    margin-top: 10px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
 
+<div class="phone-container">
+  <div style="font-size: 13px; font-weight: 800; color: #38bdf8; margin-bottom: 8px; letter-spacing: 1px;">
+    🔴 BOUNCE TALES PRO
+  </div>
+
+  <div class="screen-bezel">
+    <canvas id="gameCanvas" width="240" height="320"></canvas>
+  </div>
+
+  <div class="keypad">
+    <div class="softkeys">
+      <button class="btn btn-soft" id="btn-lsk">LEVELS [1]</button>
+      <button class="btn btn-soft" id="btn-rsk">RETRY [*]</button>
+    </div>
+
+    <div class="dpad">
+      <div></div>
+      <button class="btn" id="btn-up">▲</button>
+      <div></div>
+      <button class="btn" id="btn-left">◀</button>
+      <button class="btn btn-action" id="btn-ok">OK</button>
+      <button class="btn" id="btn-right">▶</button>
+      <div></div>
+      <button class="btn" id="btn-down">▼</button>
+      <div></div>
+    </div>
+  </div>
+
+  <div class="info-bar">
+    10 levels, escalating difficulty • Moving &amp; crumbling platforms, patrol enemies, checkpoints, star ratings<br>
+    Keyboard: Arrows/WASD move • Space/Enter jump or confirm • R retry • Esc pause
+  </div>
+</div>
+
+<script>
+// ================= Bounce Tales PRO - Advanced Edition =================
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playBeep(freq, duration = 0.08, type = 'square', vol = 0.15) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) {}
+}
+function playSlide(f1, f2, duration) {
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(f1, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(f2, audioCtx.currentTime + duration);
+    gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch (e) {}
+}
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const W = 240, H = 320;
+const GROUND_Y = 280;
+const MAX_LEVEL = 10;
+const STORAGE_KEY = 'bounceTalesProgress';
+
+// ---------------- Seeded RNG (mulberry32) ----------------
+function mulberry32(seed) {
+  return function () {
+    seed |= 0; seed = (seed + 0x6D2B79F5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ---------------- Progress persistence ----------------
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { unlocked: 1, stars: {} };
+}
+function saveProgress(p) {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(p)); } catch (e) {}
+}
+let progress = loadProgress();
+
+// ---------------- Level Generation ----------------
+// Deterministic procedural level, difficulty scales with level number n (1..MAX_LEVEL)
+function generateLevel(n) {
+  const rng = mulberry32(n * 7919 + 13);
+  const segCount = 9 + Math.min(n, 8);              // more segments = longer level
+  const gapChance = Math.min(0.12 + n * 0.035, 0.55);
+  const spikeChance = Math.min(0.08 + n * 0.035, 0.45);
+  const movingChance = n >= 3 ? Math.min((n - 2) * 0.07, 0.45) : 0;
+  const crumbleChance = n >= 5 ? Math.min((n - 4) * 0.07, 0.4) : 0;
+  const enemyChance = n >= 4 ? Math.min((n - 3) * 0.06, 0.4) : 0;
+  const minPW = Math.max(70 - n * 3, 40);            // platforms get narrower
+  const maxPW = Math.max(160 - n * 5, 90);
+
+  const platforms = [];
+  const spikes = [];
+  const bouncePads = [];
+  const enemies = [];
+  const gems = [];
+  const checkpoints = [];
+
+  let x = 0;
+  let y = GROUND_Y;
+  // starting safe platform
+  platforms.push({ id: 0, x: 0, y: GROUND_Y, w: 130, h: 40, type: 'normal' });
+  x = 130;
+  checkpoints.push({ x: 30, y: GROUND_Y - 40 });
+
+  for (let i = 1; i <= segCount; i++) {
+    const w = minPW + rng() * (maxPW - minPW);
+    // vertical variance grows with level, clamped to playable range
+    const vary = Math.min(30 + n * 6, 100);
+    let ny = y + (rng() - 0.5) * vary;
+    ny = Math.max(120, Math.min(GROUND_Y, ny));
+
+    // gap before this platform
+    let gap = 0;
+    if (rng() < gapChance) {
+      gap = 26 + rng() * (36 + n * 4);
+    } else {
+      gap = 4 + rng() * 14;
+    }
+    x += gap;
+
+    let type = 'normal';
+    let extra = {};
+    const roll = rng();
+    if (roll < movingChance) {
+      type = 'moving';
+      const axis = rng() < 0.5 ? 'x' : 'y';
+      extra = { axis, range: 40 + rng() * 50, speed: 0.015 + n * 0.003, phase: rng() * Math.PI * 2, baseX: x, baseY: ny };
+    } else if (roll < movingChance + crumbleChance) {
+      type = 'crumble';
+      extra = { crumbleTime: 46 - Math.min(n * 2, 26), timer: -1, respawnTimer: 0 };
+    }
+
+    const plat = { id: i, x, y: ny, w, h: 16, type, ...extra };
+    platforms.push(plat);
+
+    // gem placed above platform (higher stakes gems float above gap sometimes)
+    if (rng() < 0.75) {
+      const gy = ny - 26 - (rng() < 0.3 ? 30 : 0);
+      gems.push({ x: x + w / 2 + (rng() - 0.5) * (w * 0.4), y: gy, taken: false, big: rng() < 0.15 });
+    }
+
+    // spikes on platform surface (only on normal/crumble, never on the very first couple of segments)
+    if (i > 2 && type !== 'moving' && rng() < spikeChance) {
+      const sw = Math.min(w * 0.5, 40 + n * 2);
+      spikes.push({ x: x + (w - sw) / 2, y: ny + 4, w: sw, h: 12 });
+    }
+
+    // bounce pad occasionally to cross big gaps
+    if (gap > 30 && rng() < 0.4) {
+      bouncePads.push({ x: x - gap + gap * 0.4, y: GROUND_Y - 4, w: 26, h: 8, launch: -13 - Math.min(n * 0.3, 4) });
+    }
+
+    // patrol enemy on wider normal platforms
+    if (type === 'normal' && w > 90 && i > 2 && rng() < enemyChance) {
+      enemies.push({ x: x + w / 2, baseX: x + w / 2, range: w * 0.32, y: ny - 10, speed: 0.7 + n * 0.12, dir: 1, r: 8 });
+    }
+
+    // checkpoint every ~3 segments
+    if (i % 3 === 0) checkpoints.push({ x: x + w / 2, y: ny - 40 });
+
+    y = ny;
+    x += w;
+  }
+
+  const levelWidth = x + 140;
+  const goalRing = { x: x + 70, y: y - 20, r: 22 };
+  gems.push({ x: goalRing.x - 40, y: goalRing.y - 30, taken: false, big: true });
+
+  return {
+    n, levelWidth, platforms, spikes, bouncePads, enemies, gems, checkpoints, goalRing,
+    startX: 40, startY: GROUND_Y - 60,
+  };
+}
+
+// ---------------- Game State ----------------
+let ball = { x: 40, y: 200, vx: 0, vy: 0, r: 10, onGround: false, health: 3, maxHealth: 3, gems: 0, squash: 1, invuln: 0 };
+let cameraX = 0, cameraShake = 0;
+let keys = { left: false, right: false, up: false, down: false };
+let particles = [];
+let currentLevel = null;
+let level = 1;
+let checkpointIdx = 0;
+let gameState = 'MENU'; // MENU, PLAY, PAUSE, LEVELCOMPLETE, GAMEOVER
+let levelTimer = 0;
+let menuSel = 0;
+let earnedStars = 0;
+
+function spawnParticles(x, y, color, count = 8, spread = 3) {
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y, vx: (Math.random() - 0.5) * spread * 2, vy: (Math.random() - 0.5) * spread * 2 - 1,
+      life: 24 + Math.random() * 10, maxLife: 34, color,
+    });
+  }
+}
+function updateParticles() {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx; p.y += p.vy; p.vy += 0.2; p.life--;
+    if (p.life <= 0) particles.splice(i, 1);
+  }
+}
+function drawParticles() {
+  for (const p of particles) {
+    ctx.globalAlpha = Math.max(0, p.life / p.maxLife);
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 2.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function startLevel(n) {
+  level = n;
+  currentLevel = generateLevel(n);
+  ball.x = currentLevel.startX;
+  ball.y = currentLevel.startY;
+  ball.vx = 0; ball.vy = 0;
+  ball.health = ball.maxHealth;
+  ball.gems = 0;
+  ball.invuln = 0;
+  checkpointIdx = 0;
+  cameraX = 0;
+  levelTimer = 0;
+  for (const p of currentLevel.platforms) { if (p.type === 'crumble') { p.timer = -1; p.respawnTimer = 0; p.gone = false; } }
+  gameState = 'PLAY';
+}
+
+function respawnAtCheckpoint() {
+  const cp = currentLevel.checkpoints[checkpointIdx];
+  ball.x = cp.x; ball.y = cp.y; ball.vx = 0; ball.vy = 0;
+  ball.invuln = 60;
+}
+
+function damageBall(amount, knockX) {
+  if (ball.invuln > 0) return;
+  ball.health -= amount;
+  ball.invuln = 70;
+  cameraShake = 8;
+  ball.vy = -8;
+  ball.vx = knockX || -4;
+  spawnParticles(ball.x, ball.y, '#ef4444', 10, 4);
+  playBeep(180, 0.2, 'sawtooth');
+  if (ball.health <= 0) {
+    gameState = 'GAMEOVER';
+    playBeep(120, 0.4, 'sawtooth');
+  }
+}
+
+function update() {
+  if (gameState !== 'PLAY') return;
+  levelTimer++;
+
+  // Horizontal Movement & Rolling
+  if (keys.left) ball.vx -= 0.55;
+  if (keys.right) ball.vx += 0.55;
+  ball.vx *= 0.88;
+  if (Math.abs(ball.vx) > 6) ball.vx = 6 * Math.sign(ball.vx);
+  ball.x += ball.vx;
+  if (ball.x < 12) { ball.x = 12; ball.vx = 0; }
+
+  // Gravity & Vertical
+  ball.vy += 0.6;
+  if (ball.vy > 14) ball.vy = 14;
+  ball.y += ball.vy;
+
+  // Jump
+  if (keys.up && ball.onGround) {
+    ball.vy = -10.5;
+    ball.onGround = false;
+    ball.squash = 1.4;
+    playBeep(450, 0.1, 'sine');
+  }
+
+  ball.onGround = false;
+
+  // Moving / crumbling platforms update
+  for (const p of currentLevel.platforms) {
+    if (p.type === 'moving') {
+      const t = levelTimer * p.speed + p.phase;
+      if (p.axis === 'x') p.x = p.baseX + Math.sin(t) * p.range;
+      else p.y = p.baseY + Math.sin(t) * p.range;
+    }
+    if (p.type === 'crumble' && p.gone) {
+      p.respawnTimer--;
+      if (p.respawnTimer <= 0) { p.gone = false; p.timer = -1; }
+    }
+  }
+
+  // Platform collision
+  for (const p of currentLevel.platforms) {
+    if (p.type === 'crumble' && p.gone) continue;
+    if (ball.x + ball.r > p.x && ball.x - ball.r < p.x + p.w) {
+      if (ball.y + ball.r >= p.y && ball.y - ball.r < p.y + 12 && ball.vy >= 0) {
+        ball.y = p.y - ball.r;
+        ball.vy = 0;
+        ball.onGround = true;
+        if (p.type === 'crumble') {
+          if (p.timer < 0) p.timer = p.crumbleTime;
+          p.timer--;
+          if (p.timer <= 0) {
+            p.gone = true;
+            p.respawnTimer = 90;
+            spawnParticles(ball.x, p.y, '#92400e', 10, 3);
+            playBeep(140, 0.15, 'triangle');
+          }
+        }
+        // moving platform carries ball horizontally
+        if (p.type === 'moving' && p.axis === 'x') {
+          const t = levelTimer * p.speed + p.phase;
+          const t2 = (levelTimer - 1) * p.speed + p.phase;
+          ball.x += (Math.sin(t) - Math.sin(t2)) * p.range;
+        }
+      }
+    }
+  }
+
+  // squash/stretch recovery
+  ball.squash += (1 - ball.squash) * 0.2;
+
+  // Bounce pads
+  for (const b of currentLevel.bouncePads) {
+    if (ball.x + ball.r > b.x && ball.x - ball.r < b.x + b.w && ball.y + ball.r >= b.y && ball.y + ball.r < b.y + 20 && ball.vy > 0) {
+      ball.vy = b.launch;
+      ball.squash = 1.6;
+      spawnParticles(ball.x, b.y, '#f59e0b', 8, 3);
+      playSlide(300, 900, 0.18);
+    }
+  }
+
+  // Spikes
+  for (const s of currentLevel.spikes) {
+    if (ball.x + ball.r > s.x && ball.x - ball.r < s.x + s.w && ball.y + ball.r >= s.y && ball.y - ball.r < s.y + s.h) {
+      damageBall(1, ball.x < s.x + s.w / 2 ? -4 : 4);
+    }
+  }
+
+  // Enemies (patrol)
+  for (const e of currentLevel.enemies) {
+    e.x += e.speed * e.dir;
+    if (e.x > e.baseX + e.range) e.dir = -1;
+    if (e.x < e.baseX - e.range) e.dir = 1;
+    const dist = Math.hypot(ball.x - e.x, ball.y - e.y);
+    if (dist < ball.r + e.r) {
+      // stomp from above kills enemy, else damages ball
+      if (ball.vy > 2 && ball.y < e.y) {
+        e.dead = true;
+        ball.vy = -8;
+        spawnParticles(e.x, e.y, '#7c3aed', 10, 4);
+        playBeep(500, 0.1, 'square');
+      } else {
+        damageBall(1, ball.x < e.x ? -4 : 4);
+      }
+    }
+  }
+  currentLevel.enemies = currentLevel.enemies.filter(e => !e.dead);
+
+  // Collect Gems
+  for (const g of currentLevel.gems) {
+    if (!g.taken && Math.hypot(ball.x - g.x, ball.y - g.y) < ball.r + 10) {
+      g.taken = true;
+      ball.gems += g.big ? 2 : 1;
+      spawnParticles(g.x, g.y, '#facc15', 8, 3);
+      playBeep(880, 0.08, 'sine');
+    }
+  }
+
+  // Checkpoints
+  for (let i = 0; i < currentLevel.checkpoints.length; i++) {
+    const cp = currentLevel.checkpoints[i];
+    if (i > checkpointIdx && Math.abs(ball.x - cp.x) < 40 && ball.y < GROUND_Y) {
+      checkpointIdx = i;
+    }
+  }
+
+  // Pit Death (fall through gap) -> respawn at checkpoint, lose 1 health
+  if (ball.y > H + 30) {
+    damageBall(1, 0);
+    if (gameState === 'PLAY') respawnAtCheckpoint();
+  }
+
+  // Reach Goal
+  const gr = currentLevel.goalRing;
+  if (Math.hypot(ball.x - gr.x, ball.y - gr.y) < ball.r + gr.r) {
+    finishLevel();
+  }
+
+  if (ball.invuln > 0) ball.invuln--;
+  if (cameraShake > 0) cameraShake *= 0.85;
+
+  updateParticles();
+
+  // Smooth Camera Follow
+  const targetCam = Math.max(0, Math.min(ball.x - W / 2, currentLevel.levelWidth - W));
+  cameraX += (targetCam - cameraX) * 0.15;
+}
+
+function finishLevel() {
+  const totalGems = currentLevel.gems.length;
+  const gemRatio = totalGems > 0 ? ball.gems / totalGems : 1;
+  let stars = 1;
+  if (gemRatio >= 0.6 && ball.health >= 2) stars = 2;
+  if (gemRatio >= 0.9 && ball.health >= 3) stars = 3;
+  earnedStars = stars;
+
+  progress.stars[level] = Math.max(progress.stars[level] || 0, stars);
+  if (level >= progress.unlocked && level < MAX_LEVEL) progress.unlocked = level + 1;
+  saveProgress(progress);
+
+  gameState = 'LEVELCOMPLETE';
+  playBeep(600, 0.1, 'triangle');
+  setTimeout(() => playBeep(900, 0.3, 'sine'), 120);
+}
+
+// ---------------- Drawing ----------------
+function drawBackground() {
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  const hue = Math.min(level * 6, 60);
+  grad.addColorStop(0, `hsl(${200 - hue}, 80%, 62%)`);
+  grad.addColorStop(0.7, `hsl(${200 - hue}, 70%, 80%)`);
+  grad.addColorStop(1, `hsl(${120 - hue * 0.5}, 55%, 68%)`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+}
+
+function drawGame() {
+  drawBackground();
+
+  const shakeX = (Math.random() - 0.5) * cameraShake;
+  const shakeY = (Math.random() - 0.5) * cameraShake;
+
+  ctx.save();
+  ctx.translate(-cameraX + shakeX, shakeY);
+
+  // parallax hills
+  ctx.fillStyle = 'rgba(74, 222, 128, 0.55)';
+  for (let i = 0; i < 8; i++) {
+    ctx.beginPath();
+    ctx.arc(i * 260 + 100 - cameraX * 0.15, 320, 140, Math.PI, 0);
+    ctx.fill();
+  }
+
+  const L = currentLevel;
+
+  // Platforms
+  for (const p of L.platforms) {
+    if (p.type === 'crumble' && p.gone) continue;
+    let topColor = '#15803d', botColor = '#78350f';
+    if (p.type === 'moving') { topColor = '#0ea5e9'; botColor = '#0369a1'; }
+    if (p.type === 'crumble') {
+      const fade = p.timer >= 0 ? Math.max(0.35, p.timer / p.crumbleTime) : 1;
+      topColor = `rgba(217,119,6,${fade})`; botColor = `rgba(120,53,15,${fade})`;
+    }
+    ctx.fillStyle = topColor;
+    ctx.fillRect(p.x, p.y, p.w, 6);
+    ctx.fillStyle = botColor;
+    ctx.fillRect(p.x, p.y + 6, p.w, p.h - 6);
+  }
+
+  // Bounce Pads
+  for (const b of L.bouncePads) {
+    ctx.fillStyle = '#f59e0b';
+    ctx.fillRect(b.x, b.y, b.w, b.h);
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(b.x + 4, b.y + 2, b.w - 8, b.h - 4);
+  }
+
+  // Spikes
+  ctx.fillStyle = '#475569';
+  for (const s of L.spikes) {
+    for (let sx = s.x; sx < s.x + s.w; sx += 12) {
+      ctx.beginPath();
+      ctx.moveTo(sx, s.y + s.h);
+      ctx.lineTo(sx + 6, s.y);
+      ctx.lineTo(sx + 12, s.y + s.h);
+      ctx.fill();
+    }
+  }
+
+  // Enemies
+  for (const e of L.enemies) {
+    ctx.fillStyle = '#7c3aed';
+    ctx.beginPath();
+    ctx.arc(e.x, e.y, e.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#c4b5fd';
+    for (let a = 0; a < 8; a++) {
+      const ang = (a / 8) * Math.PI * 2 + levelTimer * 0.05;
+      ctx.beginPath();
+      ctx.moveTo(e.x + Math.cos(ang) * e.r, e.y + Math.sin(ang) * e.r);
+      ctx.lineTo(e.x + Math.cos(ang) * (e.r + 4), e.y + Math.sin(ang) * (e.r + 4));
+      ctx.stroke();
+    }
+  }
+
+  // Gems
+  for (const g of L.gems) {
+    if (!g.taken) {
+      const size = g.big ? 8 : 6;
+      const bob = Math.sin(levelTimer * 0.08 + g.x) * 2;
+      ctx.fillStyle = g.big ? '#f472b6' : '#facc15';
+      ctx.beginPath();
+      ctx.arc(g.x, g.y + bob, size, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = g.big ? '#be185d' : '#ca8a04';
+      ctx.stroke();
+    }
+  }
+
+  drawParticles();
+
+  // Goal Ring
+  ctx.strokeStyle = '#e11d48';
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(L.goalRing.x, L.goalRing.y, L.goalRing.r + Math.sin(levelTimer * 0.1) * 2, 0, Math.PI * 2);
+  ctx.stroke();
+
+  // Ball (with squash/stretch + invuln flicker)
+  if (ball.invuln === 0 || Math.floor(ball.invuln / 4) % 2 === 0) {
+    ctx.save();
+    ctx.translate(ball.x, ball.y);
+    ctx.scale(1 / ball.squash, ball.squash);
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath();
+    ctx.arc(0, 0, ball.r, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffffff';
+    ctx.beginPath();
+    ctx.arc(-3, -3, 2.6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore();
+
+  // Top HUD
+  ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+  ctx.fillRect(0, 0, W, 26);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 11px sans-serif';
+  let heartStr = '';
+  for (let i = 0; i < ball.maxHealth; i++) heartStr += i < ball.health ? '❤' : '🖤';
+  ctx.fillText(heartStr, 8, 18);
+  ctx.fillText(`💎${ball.gems}/${L.gems.length}`, 88, 18);
+  ctx.fillText(`Lv${level}`, W - 34, 18);
+}
+
+function drawMenu() {
+  ctx.fillStyle = '#0b1220';
+  ctx.fillRect(0, 0, W, H);
+  ctx.fillStyle = '#38bdf8';
+  ctx.font = 'bold 18px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('BOUNCE TALES', W / 2, 34);
+  ctx.font = '10px sans-serif';
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText('Select a level', W / 2, 50);
+
+  const cols = 4, cell = 48, startX = (W - cols * cell) / 2, startY = 66;
+  for (let i = 0; i < MAX_LEVEL; i++) {
+    const lvl = i + 1;
+    const cx = startX + (i % cols) * cell + cell / 2;
+    const cy = startY + Math.floor(i / cols) * cell + cell / 2;
+    const unlocked = lvl <= progress.unlocked;
+    const selected = i === menuSel;
+
+    ctx.fillStyle = unlocked ? (selected ? '#0284c7' : '#1e293b') : '#111827';
+    ctx.beginPath();
+    ctx.roundRect(cx - 20, cy - 20, 40, 40, 8);
+    ctx.fill();
+    if (selected) { ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2; ctx.stroke(); }
+
+    ctx.fillStyle = unlocked ? '#f1f5f9' : '#475569';
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(unlocked ? String(lvl) : '🔒', cx, cy + 5);
+
+    const st = progress.stars[lvl] || 0;
+    if (unlocked && st > 0) {
+      ctx.font = '8px sans-serif';
+      ctx.fillStyle = '#facc15';
+      ctx.fillText('★'.repeat(st) + '☆'.repeat(3 - st), cx, cy + 16);
+    }
+  }
+
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '10px sans-serif';
+  ctx.fillText('Arrows: move • OK: play', W / 2, H - 14);
+  ctx.textAlign = 'left';
+}
+
+function drawOverlayBox(title, color, lines, y0 = 80, hgt = 150) {
+  ctx.fillStyle = 'rgba(0,0,0,0.78)';
+  ctx.fillRect(16, y0, W - 32, hgt);
+  ctx.strokeStyle = color;
+  ctx.strokeRect(16, y0, W - 32, hgt);
+  ctx.fillStyle = color;
+  ctx.font = 'bold 15px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(title, W / 2, y0 + 30);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '11px sans-serif';
+  lines.forEach((line, i) => ctx.fillText(line, W / 2, y0 + 55 + i * 18));
+  ctx.textAlign = 'left';
+}
+
+function draw() {
+  if (gameState === 'MENU') {
+    drawMenu();
+    return;
+  }
+  drawGame();
+  if (gameState === 'LEVELCOMPLETE') {
+    const stars = '★'.repeat(earnedStars) + '☆'.repeat(3 - earnedStars);
+    drawOverlayBox('STAGE CLEAR!', '#22c55e', [
+      `Gems: ${ball.gems}/${currentLevel.gems.length}`,
+      stars,
+      level < MAX_LEVEL ? 'OK: Next Level' : 'OK: Level Select',
+    ]);
+  } else if (gameState === 'GAMEOVER') {
+    drawOverlayBox('GAME OVER', '#ef4444', [
+      `Reached Level ${level}`,
+      'OK: Retry   MENU: Levels',
+    ]);
+  } else if (gameState === 'PAUSE') {
+    drawOverlayBox('PAUSED', '#38bdf8', ['OK: Resume', 'MENU: Level Select']);
+  }
+}
+
+function loop() {
+  update();
+  draw();
+  requestAnimationFrame(loop);
+}
+loop();
+
+// ---------------- Input ----------------
+// NOTE: touch buttons act on press (touchstart/mousedown), matching keyboard
+// keydown semantics. We never rely on the synthetic 'click' event, because
+// calling preventDefault() on touchend suppresses it on mobile browsers.
+function pressOK() {
+  if (gameState === 'MENU') {
+    const lvl = menuSel + 1;
+    if (lvl <= progress.unlocked) startLevel(lvl);
+  } else if (gameState === 'LEVELCOMPLETE') {
+    if (level < MAX_LEVEL) startLevel(level + 1);
+    else gameState = 'MENU';
+  } else if (gameState === 'GAMEOVER') {
+    startLevel(level);
+  } else if (gameState === 'PAUSE') {
+    gameState = 'PLAY';
+  } else if (gameState === 'PLAY') {
+    keys.up = true;
+  }
+}
+function pressMenu() {
+  gameState = 'MENU';
+}
+function pressRetry() {
+  if (gameState === 'PLAY' || gameState === 'GAMEOVER') startLevel(level);
+  else if (gameState === 'PAUSE') { gameState = 'PLAY'; }
+}
+function moveMenuSel(dx, dy) {
+  const cols = 4;
+  let r = Math.floor(menuSel / cols), c = menuSel % cols;
+  c = Math.max(0, Math.min(cols - 1, c + dx));
+  r = Math.max(0, Math.min(Math.ceil(MAX_LEVEL / cols) - 1, r + dy));
+  const idx = r * cols + c;
+  if (idx >= 0 && idx < MAX_LEVEL) menuSel = idx;
+}
+
+// D-pad: while PLAY is active, holding moves the ball; in any menu-like
+// state, a press instead navigates/selects (mirrors keydown behavior below).
+function bindDpadButton(id, keyName, menuPressAction) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = (e) => {
+    e.preventDefault();
+    if (gameState === 'MENU' && menuPressAction) {
+      menuPressAction();
+      return;
+    }
+    keys[keyName] = true;
+    el.classList.add('active');
+  };
+  const end = (e) => {
+    e.preventDefault();
+    keys[keyName] = false;
+    el.classList.remove('active');
+  };
+  el.addEventListener('touchstart', start);
+  el.addEventListener('touchend', end);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', end);
+}
+bindDpadButton('btn-left', 'left', () => moveMenuSel(-1, 0));
+bindDpadButton('btn-right', 'right', () => moveMenuSel(1, 0));
+bindDpadButton('btn-up', 'up', () => moveMenuSel(0, -1));
+bindDpadButton('btn-down', 'down', () => moveMenuSel(0, 1));
+
+// OK: while PLAY is active, holding jumps; in any other state, a press
+// immediately confirms/starts/retries (start level, resume, next level...).
+function bindOkButton(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = (e) => {
+    e.preventDefault();
+    if (gameState === 'PLAY') { keys.up = true; el.classList.add('active'); }
+    else { pressOK(); }
+  };
+  const end = (e) => {
+    e.preventDefault();
+    keys.up = false;
+    el.classList.remove('active');
+  };
+  el.addEventListener('touchstart', start);
+  el.addEventListener('touchend', end);
+  el.addEventListener('mousedown', start);
+  el.addEventListener('mouseup', end);
+}
+bindOkButton('btn-ok');
+
+document.getElementById('btn-lsk').onclick = pressMenu;
+document.getElementById('btn-rsk').onclick = pressRetry;
+
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') { keys.left = true; if (gameState === 'MENU') moveMenuSel(-1, 0); }
+  if (e.key === 'ArrowRight' || e.key === 'd') { keys.right = true; if (gameState === 'MENU') moveMenuSel(1, 0); }
+  if (e.key === 'ArrowUp' || e.key === 'w') { keys.up = true; if (gameState === 'MENU') moveMenuSel(0, -1); }
+  if (e.key === 'ArrowDown' || e.key === 's') { keys.down = true; if (gameState === 'MENU') moveMenuSel(0, 1); }
+  if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); pressOK(); }
+  if (e.key === 'r' || e.key === 'R') pressRetry();
+  if (e.key === 'Escape') {
+    if (gameState === 'PLAY') gameState = 'PAUSE';
+    else if (gameState === 'PAUSE') gameState = 'PLAY';
+  }
+});
+window.addEventListener('keyup', (e) => {
+  if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+  if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+  if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ' || e.key === 'Enter') keys.up = false;
+  if (e.key === 'ArrowDown' || e.key === 's') keys.down = false;
+});
+</script>
+</body>
+</html>
