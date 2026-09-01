@@ -1,1 +1,333 @@
 
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#0a0714">
+<title>Candy Pop</title>
+<style>
+:root{
+ --bg:#0a0714;--glass:rgba(26,17,46,.5);--glass-strong:rgba(26,17,46,.72);--line:rgba(255,255,255,.09);
+ --text:#f7f3ff;--muted:#b6a8dd;--pink:#ff5d8f;--gold:#ffcc4d;--mint:#3fe8c0;--violet:#8a6bff;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;font-family:ui-rounded,-apple-system,"Segoe UI",system-ui,sans-serif;color:var(--text)}
+body{
+ background:
+  radial-gradient(circle at 14% 18%,rgba(255,93,143,.28),transparent 42%),
+  radial-gradient(circle at 88% 12%,rgba(63,232,192,.20),transparent 46%),
+  radial-gradient(circle at 50% 95%,rgba(138,107,255,.28),transparent 55%),
+  var(--bg);
+}
+button{font:inherit;border:0;background:none;color:inherit}
+#app{position:fixed;inset:0;display:flex;flex-direction:column;padding:max(8px,env(safe-area-inset-top)) max(8px,env(safe-area-inset-right)) max(8px,env(safe-area-inset-bottom)) max(8px,env(safe-area-inset-left))}
+
+.hud{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;gap:10px}
+.hud-left{display:flex;align-items:center;gap:8px;min-width:0}
+.brand{font-weight:800;font-size:clamp(14px,4vw,17px);letter-spacing:.3px;background:linear-gradient(90deg,var(--pink),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent;white-space:nowrap}
+.chip{display:flex;flex-direction:column;align-items:center;background:var(--glass);border:1px solid var(--line);border-radius:12px;padding:3px 9px;min-width:38px}
+.chip .n{font-size:15px;font-weight:800;line-height:1.1}
+.chip .l{font-size:8px;color:var(--muted);letter-spacing:.4px}
+
+.hud-center{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0;max-width:230px}
+.score-row{display:flex;align-items:baseline;gap:5px}
+.score-num{font-size:clamp(17px,5vw,21px);font-weight:900}
+.score-goal{font-size:11px;color:var(--muted)}
+.goal-track{width:100%;height:6px;border-radius:4px;background:rgba(255,255,255,.08);margin-top:3px;overflow:hidden}
+.goal-fill{height:100%;width:0%;border-radius:4px;background:linear-gradient(90deg,var(--pink),var(--gold));transition:width .3s}
+
+.hud-right{display:flex;align-items:center;gap:6px}
+.iconbtn{width:34px;height:34px;border-radius:50%;background:var(--glass);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:15px}
+
+.stage{flex:1;display:flex;align-items:center;justify-content:center;min-height:0;position:relative}
+.board-shell{position:relative;border-radius:22px;box-shadow:0 20px 60px #0009,0 0 0 1px rgba(255,255,255,.06) inset}
+canvas{display:block;border-radius:22px;touch-action:none}
+
+.dock{display:flex;justify-content:center;padding:8px 0 4px}
+.dock-pill{display:flex;gap:6px;background:var(--glass-strong);border:1px solid var(--line);border-radius:26px;padding:6px;backdrop-filter:blur(10px)}
+.dockbtn{width:52px;height:44px;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:17px}
+.dockbtn span{font-size:8.5px;color:var(--muted);letter-spacing:.3px}
+.dockbtn:active{background:rgba(255,255,255,.08)}
+.dockbtn.hint{color:var(--gold)}
+.dockbtn.shuffle{color:var(--mint)}
+
+.overlay{position:fixed;inset:0;background:rgba(6,3,14,.82);backdrop-filter:blur(9px);display:flex;align-items:center;justify-content:center;padding:22px;z-index:20}
+.modal{width:min(400px,100%);background:var(--glass-strong);border:1px solid var(--line);border-radius:26px;padding:28px 24px;text-align:center;box-shadow:0 25px 70px #000a}
+.modal h1{font-size:26px;margin:0 0 6px;font-weight:900}
+.modal p{color:var(--muted);margin:0 0 16px;font-size:13.5px;line-height:1.5}
+.big{font-size:42px;font-weight:900;margin:2px 0 18px;background:linear-gradient(90deg,var(--pink),var(--gold));-webkit-background-clip:text;background-clip:text;color:transparent}
+.primary{width:100%;height:50px;border-radius:16px;background:linear-gradient(90deg,var(--pink),var(--gold));color:#1a0e12;font-weight:900;font-size:15.5px}
+.level-row{display:flex;align-items:center;justify-content:center;gap:16px;margin:16px 0}
+.level-btn{width:46px;height:44px;border-radius:14px;background:rgba(255,255,255,.08);border:1px solid var(--line);font-size:19px}
+.level-num{font-size:24px;font-weight:900;width:40px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="hud">
+    <div class="hud-left">
+      <div class="brand">CANDY&nbsp;POP</div>
+      <div class="chip"><div class="n" id="lvl">1</div><div class="l">লেভেল</div></div>
+    </div>
+    <div class="hud-center">
+      <div class="score-row"><span class="score-num" id="score">0</span><span class="score-goal">/ <span id="goal">0</span></span></div>
+      <div class="goal-track"><div class="goal-fill" id="goalFill"></div></div>
+    </div>
+    <div class="hud-right">
+      <div class="chip"><div class="n" id="moves">0</div><div class="l">চাল</div></div>
+      <button class="iconbtn" id="soundBtn">🔊</button>
+      <button class="iconbtn" id="pauseBtn">⏸</button>
+    </div>
+  </div>
+
+  <div class="stage">
+    <div class="board-shell"><canvas id="board"></canvas></div>
+  </div>
+
+  <div class="dock">
+    <div class="dock-pill">
+      <button class="dockbtn shuffle" data-act="shuffle">🔀<span>শাফল</span></button>
+      <button class="dockbtn hint" data-act="hint">💡<span>হিন্ট</span></button>
+      <button class="dockbtn" data-act="restart">↻<span>রিস্টার্ট</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="menu">
+ <div class="modal">
+  <h1>Candy Pop</h1><p>শুরুর লেভেল বেছে নিন — একটি ক্যান্ডি ট্যাপ করে পাশেরটির সাথে সোয়াইপ বা ট্যাপ করে অদলবদল করুন।</p>
+  <div class="level-row"><button class="level-btn" id="levelDown">−</button><div class="level-num" id="startLevel">1</div><button class="level-btn" id="levelUp">+</button></div>
+  <button class="primary" id="startBtn">খেলা শুরু করুন</button>
+ </div>
+</div>
+<div class="overlay hidden" id="pauseModal">
+ <div class="modal"><h1>পজড</h1><p>আপনার গেইম অপেক্ষায় আছে।</p><button class="primary" id="resumeBtn">চালিয়ে যান</button></div>
+</div>
+<div class="overlay hidden" id="winModal">
+ <div class="modal"><h1>লেভেল সম্পন্ন! 🎉</h1><p>মোট স্কোর</p><div class="big" id="winScore">0</div><button class="primary" id="nextLevelBtn">পরবর্তী লেভেল</button></div>
+</div>
+<div class="overlay hidden" id="loseModal">
+ <div class="modal"><h1>চাল শেষ</h1><p>মোট স্কোর</p><div class="big" id="loseScore">0</div><button class="primary" id="retryBtn">আবার চেষ্টা করুন</button></div>
+</div>
+
+<script>
+"use strict";
+const W=8,H=8,TYPES=6;
+const COLORS=["#ff4d6d","#ff9f1c","#ffd60a","#39d353","#4cc9f0","#b185f7"];
+const canvasEl=document.getElementById("board"),ctx=canvasEl.getContext("2d");
+const shell=document.querySelector(".board-shell"),stage=document.querySelector(".stage");
+let cellPx=40,dpr=1;
+
+let grid=[],fallAnim=[],flashSet=new Set(),selected=null,hintCells=null,hintTimer=0;
+let score=0,movesLeft=0,target=0,level=1,startLevel=1;
+let running=false,paused=false,busy=false,sound=true,audio=null;
+
+const sleep=ms=>new Promise(res=>setTimeout(res,ms));
+const rnd=()=>Math.floor(Math.random()*TYPES);
+
+// balanced so an average deliberate player (not just lucky taps) can clear every level;
+// difficulty rises gradually rather than spiking.
+function levelConfig(lv){return {target:300+(lv-1)*160, moves:Math.max(16,22-Math.floor((lv-1)/2))}}
+
+function resize(){
+ const pad=16;
+ const availW=stage.clientWidth-pad;
+ const availH=stage.clientHeight-pad;
+ const size=Math.max(180,Math.floor(Math.min(availW,availH)));
+ dpr=Math.min(2,window.devicePixelRatio||1);
+ shell.style.width=size+"px";shell.style.height=size+"px";
+ canvasEl.style.width=size+"px";canvasEl.style.height=size+"px";
+ canvasEl.width=Math.round(size*dpr);canvasEl.height=Math.round(size*dpr);
+ ctx.setTransform(dpr,0,0,dpr,0,0);
+ cellPx=size/W;
+}
+window.addEventListener("resize",resize);
+window.addEventListener("orientationchange",()=>setTimeout(resize,150));
+
+function generateBoard(){
+ grid=Array.from({length:H},()=>Array(W).fill(0));
+ fallAnim=Array.from({length:H},()=>Array(W).fill(0));
+ for(let r=0;r<H;r++)for(let c=0;c<W;c++){
+  let t;
+  do{t=rnd();}while(
+   (c>=2&&grid[r][c-1]===t&&grid[r][c-2]===t)||
+   (r>=2&&grid[r-1][c]===t&&grid[r-2][c]===t)
+  );
+  grid[r][c]=t;
+ }
+}
+function swapTypes(r1,c1,r2,c2){const t=grid[r1][c1];grid[r1][c1]=grid[r2][c2];grid[r2][c2]=t}
+function isAdjacent(a,b){return Math.abs(a.r-b.r)+Math.abs(a.c-b.c)===1}
+
+function findMatches(){
+ const m=new Set();
+ for(let r=0;r<H;r++){let s=0;for(let c=1;c<=W;c++){if(c<W&&grid[r][c]!=null&&grid[r][c]===grid[r][s])continue;const len=c-s;if(len>=3&&grid[r][s]!=null){for(let k=s;k<c;k++)m.add(r+","+k)}s=c}}
+ for(let c=0;c<W;c++){let s=0;for(let r=1;r<=H;r++){if(r<H&&grid[r][c]!=null&&grid[r][c]===grid[s][c])continue;const len=r-s;if(len>=3&&grid[s][c]!=null){for(let k=s;k<r;k++)m.add(k+","+c)}s=r}}
+ return m;
+}
+function collapseColumns(){
+ for(let c=0;c<W;c++){
+  const survivors=[],origRows=[];
+  for(let r=0;r<H;r++)if(grid[r][c]!=null){survivors.push(grid[r][c]);origRows.push(r)}
+  const missing=H-survivors.length;
+  const newCol=new Array(H),newOrig=new Array(H);
+  for(let i=0;i<missing;i++){newCol[i]=rnd();newOrig[i]=i-missing}
+  for(let i=0;i<survivors.length;i++){newCol[missing+i]=survivors[i];newOrig[missing+i]=origRows[i]}
+  for(let r=0;r<H;r++){grid[r][c]=newCol[r];fallAnim[r][c]=(newOrig[r]-r)*cellPx}
+ }
+}
+function findHintPair(){
+ for(let r=0;r<H;r++)for(let c=0;c<W;c++)for(const[dr,dc]of[[0,1],[1,0]]){
+  const r2=r+dr,c2=c+dc;if(r2>=H||c2>=W)continue;
+  swapTypes(r,c,r2,c2);const has=findMatches().size>0;swapTypes(r,c,r2,c2);
+  if(has)return[{r,c},{r:r2,c:c2}];
+ }
+ return null;
+}
+function hasValidMove(){return findHintPair()!==null}
+
+function updateUI(){
+ document.getElementById("lvl").textContent=level;
+ document.getElementById("score").textContent=score.toLocaleString();
+ document.getElementById("goal").textContent=target.toLocaleString();
+ document.getElementById("moves").textContent=movesLeft;
+ document.getElementById("goalFill").style.width=Math.min(100,(score/target)*100)+"%";
+}
+
+function beginLevel(){
+ const cfg=levelConfig(level);
+ target=cfg.target;movesLeft=cfg.moves;score=0;selected=null;hintCells=null;busy=false;
+ running=true;paused=false;
+ do{generateBoard();}while(!hasValidMove());
+ updateUI();
+}
+function checkEndConditions(){
+ if(score>=target){win();return}
+ if(movesLeft<=0){lose();return}
+ if(!hasValidMove()){do{generateBoard();}while(!hasValidMove());}
+}
+function win(){running=false;document.getElementById("winScore").textContent=score.toLocaleString();document.getElementById("winModal").classList.remove("hidden");beep("win")}
+function lose(){running=false;document.getElementById("loseScore").textContent=score.toLocaleString();document.getElementById("loseModal").classList.remove("hidden");beep("lose")}
+
+async function resolveCascade(){
+ let combo=0;
+ while(true){
+  const matches=findMatches();
+  if(matches.size===0)break;
+  combo++;
+  const pts=matches.size*10*combo+Math.max(0,matches.size-3)*15;
+  score+=pts;updateUI();beep(combo>1?"combo":"match");
+  flashSet=matches;
+  await sleep(180);
+  for(const key of matches){const[r,c]=key.split(",").map(Number);grid[r][c]=null}
+  flashSet=new Set();
+  collapseColumns();
+  await sleep(260);
+ }
+}
+async function trySwap(r1,c1,r2,c2){
+ if(!running||paused||busy)return;
+ if(r2<0||r2>=H||c2<0||c2>=W)return;
+ if(!isAdjacent({r:r1,c:c1},{r:r2,c:c2}))return;
+ busy=true;hintCells=null;
+ swapTypes(r1,c1,r2,c2);
+ await sleep(120);
+ if(findMatches().size>0){
+  movesLeft--;updateUI();beep("swap");
+  await resolveCascade();
+  checkEndConditions();
+ }else{
+  await sleep(80);
+  swapTypes(r1,c1,r2,c2);
+  beep("invalid");
+ }
+ busy=false;
+}
+
+function roundRectPath(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function polyPath(cx,cy,r,sides,rot){ctx.beginPath();for(let i=0;i<sides;i++){const ang=-Math.PI/2+rot+(2*Math.PI/sides)*i;const x=cx+Math.cos(ang)*r,y=cy+Math.sin(ang)*r;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath()}
+function starPath(cx,cy,rOut,rIn,points){ctx.beginPath();for(let i=0;i<points*2;i++){const ang=-Math.PI/2+(Math.PI/points)*i;const rad=i%2===0?rOut:rIn;const x=cx+Math.cos(ang)*rad,y=cy+Math.sin(ang)*rad;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)}ctx.closePath()}
+function drawCandy(type,cx,cy,r){
+ ctx.save();ctx.fillStyle=COLORS[type];ctx.strokeStyle="rgba(0,0,0,.28)";ctx.lineWidth=1.4;
+ ctx.shadowColor="rgba(0,0,0,.35)";ctx.shadowBlur=6;ctx.shadowOffsetY=2;
+ if(type===0){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.shadowColor="transparent";ctx.stroke()}
+ else if(type===2){starPath(cx,cy,r,r*0.45,5);ctx.fill();ctx.shadowColor="transparent";ctx.stroke()}
+ else{const sides=type===1?3:type===5?6:4;const rot=type===3?Math.PI/4:0;polyPath(cx,cy,r,sides,rot);ctx.fill();ctx.shadowColor="transparent";ctx.stroke()}
+ ctx.globalAlpha=0.35;ctx.fillStyle="#fff";ctx.beginPath();ctx.ellipse(cx-r*0.32,cy-r*0.32,r*0.32,r*0.18,-0.6,0,Math.PI*2);ctx.fill();
+ ctx.restore();
+}
+function draw(){
+ const size=canvasEl.width/dpr;
+ ctx.clearRect(0,0,size,size);
+ roundRectPath(0,0,size,size,22);ctx.save();ctx.clip();
+ ctx.fillStyle="#150e28";ctx.fillRect(0,0,size,size);
+ for(let r=0;r<H;r++)for(let c=0;c<W;c++){ctx.fillStyle=(r+c)%2===0?"#1a1230":"#170f2a";ctx.fillRect(c*cellPx,r*cellPx,cellPx,cellPx)}
+ if(selected){ctx.strokeStyle="#ffd60a";ctx.lineWidth=3;ctx.strokeRect(selected.c*cellPx+2,selected.r*cellPx+2,cellPx-4,cellPx-4)}
+ if(hintCells){const a=0.4+0.35*Math.sin(performance.now()/150);for(const h of hintCells){ctx.save();ctx.globalAlpha=a;ctx.fillStyle="#ffd60a";ctx.fillRect(h.c*cellPx+4,h.r*cellPx+4,cellPx-8,cellPx-8);ctx.restore()}}
+ for(let r=0;r<H;r++)for(let c=0;c<W;c++){
+  if(grid[r][c]==null)continue;
+  const flashing=flashSet.has(r+","+c);
+  const cx=c*cellPx+cellPx/2,cy=r*cellPx+cellPx/2+(fallAnim[r]?fallAnim[r][c]:0);
+  const rad=cellPx*0.36*(flashing?1.2:1);
+  if(flashing){ctx.save();ctx.globalAlpha=0.5;ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(cx,cy,cellPx*0.55,0,Math.PI*2);ctx.fill();ctx.restore()}
+  drawCandy(grid[r][c],cx,cy,rad);
+ }
+ ctx.restore();
+}
+function frame(){
+ for(let r=0;r<H;r++)for(let c=0;c<W;c++){
+  if(fallAnim[r]&&fallAnim[r][c]){fallAnim[r][c]*=0.72;if(Math.abs(fallAnim[r][c])<0.6)fallAnim[r][c]=0}
+ }
+ draw();
+ requestAnimationFrame(frame);
+}
+
+function beep(kind){if(!sound)return;try{audio=audio||new(window.AudioContext||window.webkitAudioContext)();if(audio.state==="suspended")audio.resume();const o=audio.createOscillator(),g=audio.createGain();const f={select:260,swap:340,match:520,combo:680,invalid:120,win:760,lose:90,shuffle:200}[kind]||220;o.frequency.value=f;o.type=kind==="invalid"||kind==="lose"?"square":"sine";g.gain.setValueAtTime(.04,audio.currentTime);g.gain.exponentialRampToValueAtTime(.001,audio.currentTime+.12);o.connect(g);g.connect(audio.destination);o.start();o.stop(audio.currentTime+.13)}catch(e){}}
+
+function cellFromEvent(e){
+ const rect=canvasEl.getBoundingClientRect();
+ const x=e.clientX-rect.left,y=e.clientY-rect.top;
+ return{r:Math.max(0,Math.min(H-1,Math.floor(y/cellPx))),c:Math.max(0,Math.min(W-1,Math.floor(x/cellPx)))};
+}
+let downCell=null,downX=0,downY=0;
+canvasEl.addEventListener("pointerdown",e=>{if(!running||paused||busy)return;downCell=cellFromEvent(e);downX=e.clientX;downY=e.clientY});
+canvasEl.addEventListener("pointerup",e=>{
+ if(!running||paused||busy||!downCell)return;
+ const dx=e.clientX-downX,dy=e.clientY-downY,dist=Math.max(Math.abs(dx),Math.abs(dy));
+ if(dist>14){
+  let tr=downCell.r,tc=downCell.c;
+  if(Math.abs(dx)>Math.abs(dy))tc+=dx>0?1:-1;else tr+=dy>0?1:-1;
+  trySwap(downCell.r,downCell.c,tr,tc);
+  selected=null;
+ }else{
+  const up=cellFromEvent(e);
+  if(selected&&selected.r===up.r&&selected.c===up.c){selected=null}
+  else if(selected&&isAdjacent(selected,up)){trySwap(selected.r,selected.c,up.r,up.c);selected=null}
+  else{selected=up;beep("select")}
+ }
+ downCell=null;
+});
+
+document.querySelectorAll(".dockbtn").forEach(b=>b.addEventListener("pointerdown",e=>{
+ e.preventDefault();if(!running)return;
+ const act=b.dataset.act;
+ if(act==="shuffle"){if(busy||paused)return;do{generateBoard();}while(!hasValidMove());beep("shuffle")}
+ else if(act==="hint"){if(busy||paused)return;const pair=findHintPair();if(pair){hintCells=pair;clearTimeout(hintTimer);hintTimer=setTimeout(()=>{hintCells=null},1800)}}
+ else if(act==="restart"){beginLevel()}
+}));
+document.getElementById("pauseBtn").onclick=()=>{if(!running)return;paused=!paused;document.getElementById("pauseModal").classList.toggle("hidden",!paused);beep("select")};
+document.getElementById("resumeBtn").onclick=()=>{paused=false;document.getElementById("pauseModal").classList.add("hidden")};
+document.getElementById("soundBtn").onclick=()=>{sound=!sound;document.getElementById("soundBtn").textContent=sound?"🔊":"🔇";if(sound)beep("select")};
+document.getElementById("startBtn").onclick=()=>{document.getElementById("menu").classList.add("hidden");level=startLevel;beginLevel()};
+document.getElementById("nextLevelBtn").onclick=()=>{document.getElementById("winModal").classList.add("hidden");level++;beginLevel()};
+document.getElementById("retryBtn").onclick=()=>{document.getElementById("loseModal").classList.add("hidden");beginLevel()};
+document.getElementById("levelDown").onclick=()=>{startLevel=Math.max(1,startLevel-1);document.getElementById("startLevel").textContent=startLevel};
+document.getElementById("levelUp").onclick=()=>{startLevel=Math.min(20,startLevel+1);document.getElementById("startLevel").textContent=startLevel};
+
+generateBoard();resize();updateUI();draw();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
