@@ -100,13 +100,13 @@
       "version": 1
     },
     {
-      "id": "candysaga",
+      "id": "candycrush",
       "title": "Candy Saga",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/candysaga/icon.webp",
       "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/candysaga/",
-      "entry": "candysaga.html",
+      "entry": "candycrush.html",
       "files": [
-        "candysaga.html"
+        "candycrush.html"
       ],
       "version": 1
     },
