@@ -100,6 +100,18 @@
       "version": 1
     },
     {
+      "id": "candysaga",
+      "title": "Candy Saga",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/candysaga/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/candysaga/",
+      "entry": "candysaga.html",
+      "files": [
+        "candysaga.html"
+      ],
+      "version": 1
+    },
+    
+    {
       "id": "bouncetalepro",
       "title": "Bounce Tale Pro",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/bouncetalepro/icon.webp",
