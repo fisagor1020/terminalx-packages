@@ -48,6 +48,17 @@
       "version": 1
     },
     {
+      "id": "shologuti",
+      "title": "16 Guti",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/shologuti/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/shologuti/",
+      "entry": "shologuti.html",
+      "files": [
+        "shologuti.html"
+      ],
+      "version": 2
+    },
+    {
       "id": "fruitninja",
       "title": "Fruit Slicer Ninja",
       "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/fruitninja/icon.webp",
