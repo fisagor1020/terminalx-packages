@@ -11,9 +11,9 @@
   --panel:#241309ee;--text:#f1e3ce;--dim:#c9b393;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;padding:0;overscroll-behavior:none}
+html,body{overscroll-behavior:none;overflow:hidden;margin:0;padding:0;width:100%;height:100%;touch-action:none}
 body{
- min-height:100dvh;background:radial-gradient(900px 520px at 50% -12%,#3a2415 0%,var(--bg) 65%);
+ height:100dvh;min-height:0;overflow:hidden;background:radial-gradient(900px 520px at 50% -12%,#3a2415 0%,var(--bg) 65%);
  color:var(--text);font-family:system-ui,"Noto Sans Bengali",sans-serif;
  display:flex;flex-direction:column;align-items:center;
  padding:6px 8px max(10px,env(safe-area-inset-bottom));
@@ -55,13 +55,13 @@ h1{font-family:serif;font-weight:400;font-size:clamp(21px,5.5vw,29px);margin:0;c
 .status.thinking{color:var(--gold)}.status.win{color:var(--gold);font-size:14px}
 
 /* Board gets almost all vertical space */
-.board-wrap{
+.board-wrap{touch-action:none;user-select:none;-webkit-user-select:none;
  width:min(100%,400px);display:flex;justify-content:center;padding:7px;border-radius:13px;
  background:radial-gradient(120% 90% at 50% 8%,#ffffff10,transparent 55%),linear-gradient(160deg,var(--wood),var(--wood2));
  box-shadow:0 10px 24px #0008,inset 0 0 0 1px #ffffff10
 }
 svg#board{
- display:block;width:auto;height:min(67dvh,620px);max-height:calc(100dvh - 220px);
+ display:block;width:auto;height:min(65dvh,620px);max-height:calc(100dvh - 255px);
  max-width:100%;touch-action:manipulation
 }
 .edge{stroke:var(--line);stroke-width:2;stroke-linecap:round}
@@ -70,12 +70,14 @@ svg#board{
 .piece circle.body{stroke-width:2}.piece.red circle.body{fill:url(#redGrad);stroke:#4a1a0d}
 .piece.ivory circle.body{fill:url(#ivoryGrad);stroke:#6b573a}
 .piece.selected circle.body{stroke:var(--gold);stroke-width:3;filter:drop-shadow(0 0 5px #e3b568e6)}
+.best-source circle.body{stroke:#7ee7ff!important;stroke-width:4!important;filter:drop-shadow(0 0 10px #7ee7ff)!important;animation:bestSourcePulse .7s infinite}
+@keyframes bestSourcePulse{0%,100%{opacity:.75}50%{opacity:1}}@keyframes bestSourceRing{0%,100%{r:22;opacity:.55}50%{r:28;opacity:1}}@keyframes bestArrowDash{to{stroke-dashoffset:-24}}
 .piece.fading{opacity:0}.dest-ring{fill:none;stroke-width:3;opacity:.9;pointer-events:none}
 .dest-ring.move{stroke:#8fd17c}.dest-ring.capture{stroke:#ff6b5e;stroke-dasharray:4 3;animation:pulse 1s infinite}
 @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
 .hit{fill:transparent;cursor:pointer}.hit:hover{fill:#ffffff0a}
 
-.controls{display:flex;gap:6px;width:min(100%,400px);margin-top:6px}
+.controls{display:flex;gap:6px;width:min(100%,400px);margin-top:5px;align-items:center}.controls .btn{min-width:0}.hint-compact{height:100%;display:flex;align-items:center;justify-content:center;gap:5px;flex:1;min-width:0;padding:0 5px;border-radius:9px;border:1px solid #ffffff18;background:#ffffff06;color:var(--dim);font:600 10px system-ui,sans-serif;white-space:nowrap}.hint-text{overflow:hidden;text-overflow:ellipsis}.icon-label{display:none}.switch.mini{width:34px;height:19px}.switch.mini .slider:before{width:13px;height:13px;top:2px;left:2px}.switch.mini input:checked + .slider:before{transform:translateX(15px)}
 button.btn{flex:1;font:600 11.5px system-ui,sans-serif;padding:7px 8px;border-radius:9px;border:1px solid #ffffff18;background:linear-gradient(#3a2416,#2a1810);color:var(--text);cursor:pointer}
 button.btn.primary{background:linear-gradient(#e3b568,#b8843c);color:#2a1608;border-color:transparent}
  
@@ -86,7 +88,7 @@ button.btn.primary{background:linear-gradient(#e3b568,#b8843c);color:#2a1608;bor
 .best-move-card b{font-size:10.5px;color:var(--gold)}
 .best-move-card small{font-size:9.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .assist-btn{border:1px solid #e3b56866;background:#e3b56818;color:var(--gold);border-radius:8px;padding:5px 9px;font:700 10px system-ui;cursor:pointer}
-.best-dest{stroke:#f7d36e!important;stroke-width:4!important;animation:pulse .7s infinite}
+.best-arrow{stroke:#f7d36e;stroke-width:3;stroke-dasharray:7 5;animation:bestArrowDash .8s linear infinite;filter:drop-shadow(0 0 5px #f7d36e);pointer-events:none}.best-source-ring{stroke:#7ee7ff!important;stroke-width:4!important;animation:bestSourceRing 0.7s infinite;pointer-events:none}.best-label{fill:#7ee7ff;font:bold 11px system-ui,sans-serif;paint-order:stroke;stroke:#2a1608;stroke-width:3px;pointer-events:none}.best-dest{stroke:#f7d36e!important;stroke-width:4!important;animation:pulse .7s infinite}
 
 .hint-row{
  width:min(100%,400px);display:flex;align-items:center;justify-content:flex-end;gap:7px;
@@ -100,6 +102,7 @@ button.btn.primary{background:linear-gradient(#e3b568,#b8843c);color:#2a1608;bor
 .switch input:checked + .slider:before{transform:translateX(17px);background:#fff8e8}
 
 footer{display:none}
+@media(max-width:360px){.full-label{display:none}.icon-label{display:inline}.hint-text{display:none}.controls{gap:4px}.controls .btn{padding-left:6px!important;padding-right:6px!important}.hint-compact{flex:0 0 72px}}
 @media(max-height:680px){
  body{padding-top:4px}
  h1{font-size:20px}.subtitle{display:none}
@@ -110,7 +113,7 @@ footer{display:none}
  details.rules{margin-top:4px}
 }
 
-.win-overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(12,6,3,.72);backdrop-filter:blur(4px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s}
+.win-overlay{touch-action:none;overflow:hidden;position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(12,6,3,.72);backdrop-filter:blur(4px);opacity:0;visibility:hidden;pointer-events:none;transition:opacity .25s}
 .win-overlay.show{opacity:1;visibility:visible;pointer-events:auto}
 .win-card{position:relative;width:min(86vw,330px);padding:25px 18px 18px;text-align:center;border-radius:20px;background:radial-gradient(circle at 50% 0%,#5a3519,#251309 70%);border:1px solid #e3b56888;box-shadow:0 20px 60px #000b,0 0 35px #e3b56833;transform:scale(.7) translateY(20px);transition:transform .45s cubic-bezier(.2,1.4,.4,1)}
 .win-overlay.show .win-card{transform:scale(1) translateY(0)}
@@ -158,8 +161,12 @@ footer{display:none}
 </svg></div>
 
 <div class="controls">
-  <button class="btn" id="undoBtn">↩ পূর্বে ফিরুন</button>
-  <button class="btn primary" id="newBtn">নতুন খেলা</button>
+  <button class="btn" id="undoBtn">↩ <span class="full-label">পূর্বে ফিরুন</span><span class="icon-label">ফিরুন</span></button>
+  <button class="btn primary" id="newBtn">⟳ <span class="full-label">নতুন খেলা</span><span class="icon-label">নতুন</span></button>
+  <label class="hint-compact" aria-label="চাল সাজেশন অন/অফ">
+    <span class="hint-text">চাল সাজেশন</span>
+    <span class="switch mini"><input type="checkbox" id="hintToggle" checked><span class="slider"></span></span>
+  </label>
 </div>
 <div class="assistant-row">
   <div class="best-move-card">
@@ -167,13 +174,6 @@ footer{display:none}
     <div><b>Best Move</b><small id="bestMoveText">ঘুঁটি বাছাই করুন</small></div>
     <button id="bestMoveBtn" class="assist-btn">দেখান</button>
   </div>
-</div>
-<div class="hint-row">
-  <span>চাল সাজেশন</span>
-  <label class="switch" aria-label="চাল সাজেশন অন/অফ">
-    <input type="checkbox" id="hintToggle" checked>
-    <span class="slider"></span>
-  </label>
 </div>
 
 
@@ -371,18 +371,56 @@ function aiPlay(){
     }
   },300);
 }
-function newGame(){hideWinAnimation();pieceEls={};piecesLayer.innerHTML="";initState();render()}
+function newGame(){hideWinAnimation();clearBestMoveMarks();pieceEls={};piecesLayer.innerHTML="";initState();render()}
 document.getElementById("newBtn").onclick=newGame;winNewBtn.onclick=newGame;
 document.getElementById("hintToggle").addEventListener("change",e=>{hintsEnabled=e.target.checked;renderRings()});
 const bestMoveText=document.getElementById("bestMoveText"),bestMoveBtn=document.getElementById("bestMoveBtn");
+let bestMoveTimers=[];
+function clearBestMoveMarks(){
+ bestMoveTimers.forEach(t=>clearTimeout(t)); bestMoveTimers=[];
+ Object.values(pieceEls).forEach(el=>el.classList.remove("best-source"));
+ ringsLayer.querySelectorAll(".best-dest,.best-source-ring").forEach(el=>el.remove());
+}
+function whitePieceNumber(piece){
+ return piece && piece.owner==="A" ? (piece.id-16) : piece?.id;
+}
 function showBestMove(){
+ clearBestMoveMarks();
  if(gameOver||boardLocked||current!=="A"){bestMoveText.textContent=current==="B"?"AI-এর চালের পালা":"খেলা শেষ";return}
  const acts=allActionsFor("A",{occ,pieces}); if(!acts.length){bestMoveText.textContent="কোনো বৈধ চাল নেই";return}
  let best=acts[0],score=-Infinity;
  acts.forEach(a=>{let sc=evaluate(applyActionToState({occ,pieces},a),"A")+(a.type==="capture"?500:0);if(sc>score){score=sc;best=a}});
+ const movingPiece=pieces.find(p=>p.pos===best.from);
  const f=pts[best.from],t=pts[best.to];
- bestMoveText.textContent=(best.type==="capture"?"খান: ":"চাল: ")+`(${f.x},${f.y}) → (${t.x},${t.y})`;
- if(hintsEnabled){const q=pts[best.to],r=document.createElementNS("http://www.w3.org/2000/svg","circle");r.className.baseVal="dest-ring move best-dest";r.setAttribute("cx",px(q.x));r.setAttribute("cy",py(q.y));r.setAttribute("r",18);ringsLayer.appendChild(r);setTimeout(()=>r.parentNode&&r.parentNode.removeChild(r),2200)}
+ const num=whitePieceNumber(movingPiece);
+ bestMoveText.textContent=(best.type==="capture"?"👉 নীল আলো দেওয়া গুটিটি দিয়ে খান: ":"👉 নীল আলো দেওয়া গুটিটি চালান: ")+`(${f.x},${f.y}) → (${t.x},${t.y})`;
+
+ // Mark the exact piece to move.
+ const sourceEl=movingPiece && pieceEls[movingPiece.id];
+ if(sourceEl) sourceEl.classList.add("best-source");
+
+ // Add a large ring around the exact source, plus an arrow to the destination.
+ const sq=pts[best.from],q=pts[best.to];
+ const sr=document.createElementNS("http://www.w3.org/2000/svg","circle");
+ sr.className.baseVal="best-source-ring";
+ sr.setAttribute("cx",px(sq.x));sr.setAttribute("cy",py(sq.y));sr.setAttribute("r",24);
+ ringsLayer.appendChild(sr);
+
+ const line=document.createElementNS("http://www.w3.org/2000/svg","line");
+ line.className.baseVal="best-arrow";
+ const dx=px(q.x)-px(sq.x),dy=py(q.y)-py(sq.y),len=Math.hypot(dx,dy)||1;
+ const ux=dx/len,uy=dy/len;
+ line.setAttribute("x1",px(sq.x)+ux*23);line.setAttribute("y1",py(sq.y)+uy*23);
+ line.setAttribute("x2",px(q.x)-ux*22);line.setAttribute("y2",py(q.y)-uy*22);
+ ringsLayer.appendChild(line);
+
+ // Also mark the exact destination, regardless of whether suggestion circles are ON.
+ const r=document.createElementNS("http://www.w3.org/2000/svg","circle");
+ r.className.baseVal="dest-ring move best-dest";
+ r.setAttribute("cx",px(q.x));r.setAttribute("cy",py(q.y));r.setAttribute("r",18);
+ ringsLayer.appendChild(r);
+
+ bestMoveTimers.push(setTimeout(clearBestMoveMarks,3200));
 }
 bestMoveBtn.addEventListener("click",showBestMove);
 document.getElementById("undoBtn").onclick=()=>{if(boardLocked||!history.length)return;let s=null;if(mode==="ai"){while(history.length){s=history.pop();if(s.current==="A")break}}else s=history.pop();if(s){pieceEls={};piecesLayer.innerHTML="";restore(s);render()}};
