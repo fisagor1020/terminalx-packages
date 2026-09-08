@@ -32,10 +32,7 @@
         "index.html"
       ],
       "version": 1
-    },
-
-   
-    
+    },  
     {
       "id": "dinorunner",
       "title": "T-Rex Dino Runner",
@@ -56,7 +53,7 @@
       "files": [
         "shologuti.html"
       ],
-      "version": 2
+      "version": 1
     },
     {
       "id": "fruitninja",
