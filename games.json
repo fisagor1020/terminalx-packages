@@ -35,13 +35,13 @@
     },
 
    {
-      "id": "shologhuti",
-      "title": "16 Ghuti",
-      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/shologhuti/icon.webp",
-      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/shologhuti/",
-      "entry": "shologhuti.html",
+      "id": "shologuti",
+      "title": "16 Guti",
+      "image": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/shologuti/icon.webp",
+      "base": "https://raw.githubusercontent.com/fisagor1020/terminalx-packages/main/games/shologuti/",
+      "entry": "shologuti.html",
       "files": [
-        "shologhuti.html"
+        "shologuti.html"
       ],
       "version": 1
     },
